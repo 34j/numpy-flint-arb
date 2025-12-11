@@ -26,6 +26,8 @@ classifiers = [
 ]
 
 dependencies = [
+    "numpy>=2.2.6",
+    "python-flint>=0.6.0",
 ]
 urls."Bug Tracker" = "https://github.com/34j/numpy-flint-arb/issues"
 urls.Changelog = "https://github.com/34j/numpy-flint-arb/blob/main/CHANGELOG.md"
@@ -49,7 +51,7 @@ docs = [
 line-length = 88
 lint.select = [
   "B",   # flake8-bugbear
-  "D",   # flake8-docstrings
+  # "D",   # flake8-docstrings
   "C4",  # flake8-comprehensions
   "S",   # flake8-bandit
   "F",   # pyflake
