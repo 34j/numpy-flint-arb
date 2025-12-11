@@ -4,7 +4,7 @@ requires = [ "setuptools>=77.0.3" ]
 
 [project]
 name = "numpy-flint-arb"
-version = "0.0.0"
+version = "1.0.0"
 description = "Arbitrary precision ball arithmetic (interval arithmetic) dtype in NumPy"
 readme = "README.md"
 license = "MIT"
