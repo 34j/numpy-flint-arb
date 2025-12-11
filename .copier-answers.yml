@@ -1,0 +1,24 @@
+# Changes here will be overwritten by Copier
+_commit: d196313
+_src_path: gh:34j/pypackage-template
+add_me_as_contributor: false
+copyright_year: '2025'
+documentation: true
+email: 34j.95a2p@simplelogin.com
+full_name: 34j
+github_app_installation_ids: 31487150,37771054
+github_username: 34j
+has_cli: false
+initial_commit: false
+is_django_package: false
+open_source_license: MIT
+open_with_editor: true
+package_name: numpy_flint_arb
+project_name: numpy-flint-arb
+project_short_description: Arbitrary precision ball arithmetic (interval arithmetic)
+    dtype in NumPy
+project_slug: numpy-flint-arb
+run_uv_sync: false
+setup_github: false
+setup_pre_commit: false
+
