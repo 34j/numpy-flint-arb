@@ -237,6 +237,7 @@ def result_type(*arrays_and_dtypes: Any) -> Any:
 
 namespace["result_type"] = result_type
 
+# Elementwise Functions
 namespace["abs"] = np.abs
 namespace["acos"] = np.vectorize(lambda x: x.acos())
 namespace["acosh"] = np.vectorize(lambda x: x.acosh())
@@ -244,7 +245,7 @@ namespace["add"] = np.add
 namespace["asin"] = np.vectorize(lambda x: x.asin())
 namespace["asinh"] = np.vectorize(lambda x: x.asinh())
 namespace["atan"] = np.vectorize(lambda x: x.atan())
-namespace["atan2"] = np.vectorize(lambda y, x: arb.atan2(x, y))
+namespace["atan2"] = np.vectorize(lambda y, x: y.atan2(x))
 namespace["atanh"] = np.vectorize(lambda x: x.atanh())
 # no bitwise operations
 namespace["ceil"] = np.vectorize(lambda x: x.ceil())
@@ -254,3 +255,49 @@ namespace["conj"] = np.vectorize(lambda x: acb.conjugate(x))
 namespace["cos"] = np.vectorize(lambda x: x.cos())
 namespace["cosh"] = np.vectorize(lambda x: x.cosh())
 namespace["divide"] = np.divide
+namespace["equal"] = np.equal
+namespace["exp"] = np.vectorize(lambda x: x.exp())
+namespace["expm1"] = np.vectorize(lambda x: x.expm1())
+namespace["floor"] = np.vectorize(lambda x: x.floor())
+namespace["floor_divide"] = np.floor_divide
+namespace["greater"] = np.greater
+namespace["greater_equal"] = np.greater_equal
+namespace["hypot"] = np.vectorize(lambda x1, x2: abs(x1 + x2 * 1j))
+namespace["imag"] = np.vectorize(
+    lambda x: x.imag if hasattr(x, "imag") else acb.imag(x)
+)
+namespace["isfinite"] = np.vectorize(
+    lambda x: x.is_finite() if hasattr(x, "is_finite") else np.isfinite(x)
+)
+# namespace["isinf"] = None
+namespace["isnan"] = np.vectorize(lambda x: x.is_nan())
+namespace["less"] = np.less
+namespace["less_equal"] = np.less_equal
+namespace["log"] = np.vectorize(lambda x: x.log())
+namespace["log1p"] = np.vectorize(lambda x: x.log1p())
+namespace["log2"] = np.vectorize(lambda x: x.log() / arb(2).log())
+namespace["log10"] = np.vectorize(lambda x: x.log() / arb(10).log())
+namespace["logaddexp"] = np.vectorize(lambda x1, x2: (x1.exp() + x2.exp()).log())
+# no logical operations
+namespace["maximum"] = np.vectorize(lambda x1, x2: x1.max(x2))
+namespace["minimum"] = np.vectorize(lambda x1, x2: x1.min(x2))
+namespace["multiply"] = np.multiply
+namespace["negative"] = np.negative
+# namespace["nextafter"] = None
+namespace["not_equal"] = np.not_equal
+namespace["positive"] = np.positive
+namespace["pow"] = np.pow
+namespace["real"] = np.real
+namespace["reciprocal"] = np.reciprocal
+namespace["remainder"] = np.remainder
+# namespace["round"] = None
+namespace["sign"] = np.vectorize(lambda x: x.sgn())
+namespace["signbit"] = np.vectorize(lambda x: x.sgn())
+namespace["sin"] = np.vectorize(lambda x: x.sin())
+namespace["sinh"] = np.vectorize(lambda x: x.sinh())
+namespace["square"] = np.vectorize(lambda x: x**2)
+namespace["sqrt"] = np.vectorize(lambda x: x.sqrt())
+namespace["subtract"] = np.subtract
+namespace["tan"] = np.vectorize(lambda x: x.tan())
+namespace["tanh"] = np.vectorize(lambda x: x.tanh())
+namespace["trunc"] = np.vectorize(lambda x: x.floor() if x >= 0 else x.ceil())
