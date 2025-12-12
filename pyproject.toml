@@ -26,6 +26,7 @@ classifiers = [
 ]
 
 dependencies = [
+    "cm-time>=0.1.2",
     "numpy>=2.2.6",
     "python-flint>=0.6.0",
 ]

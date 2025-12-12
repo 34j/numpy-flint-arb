@@ -1,7 +1,8 @@
+from collections.abc import Callable
 from typing import Any
 
 import numpy as np
-from flint import acb, arb, arf, ctx, fmpq, fmpz
+from flint import acb, acb_mat, arb, arb_mat, arf, ctx, fmpq, fmpq_mat, fmpz, fmpz_mat
 
 dtypes = [acb, arb, arf, fmpz, fmpq]
 
@@ -394,3 +395,43 @@ for name in ["all", "any", "diff"]:
 
 __array_api_version__ = "2024.12"
 namespace["__array_api_version__"] = __array_api_version__
+
+linalg: AttrDict[Any] = AttrDict()
+
+
+def tomat(a: Any, /) -> Any:
+    if a.dtype == acb:
+        mattype = acb_mat
+    elif a.dtype == arb:
+        mattype = arb_mat
+    elif a.dtype == fmpq:
+        mattype = fmpq_mat
+    elif a.dtype == fmpz:
+        mattype = fmpz_mat
+    else:
+        raise TypeError("Unsupported dtype for matrix conversion.")
+    ashape = a.shape
+    a = np.reshape(a, (-1, a.shape[-2], a.shape[-1]))
+    a = np.asarray([mattype(el.tolist()) for el in a])
+    a = np.reshape(a, ashape[:-2])
+    a = a.view(flarray)
+    a._fl_dtype = a.dtype
+    return a
+
+
+def frommat(a: Any, /) -> Any:
+    ashape = a.shape
+    a = np.reshape(a, (-1,))
+    a = np.asarray([asarray(el.table(), dtype=a.dtype.__element_type__) for el in a])
+    a = np.reshape(a, ashape + a[0].shape[1:])
+    a = a.view(flarray)
+    a._fl_dtype = a.dtype
+    return a
+
+
+def linalg_wrapper(f: Callable[..., Any]) -> Callable[..., Any]:
+    def wrapped(a: Any, /, **kwargs: Any) -> Any:
+        pass
+
+
+linalg["cholesky"] = np.linalg.cholesky
