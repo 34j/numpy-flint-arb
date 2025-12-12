@@ -2,6 +2,7 @@ from collections.abc import Callable
 from typing import Any
 
 import numpy as np
+from array_api.latest import ArrayNamespaceFull
 from flint import acb, acb_mat, arb, arb_mat, arf, ctx, fmpq, fmpq_mat, fmpz, fmpz_mat
 
 dtypes = [acb, arb, arf, fmpz, fmpq]
@@ -35,7 +36,7 @@ class AttrDict[TV](dict[str, TV]):
         self.__dict__ = self
 
 
-namespace: AttrDict[Any] = AttrDict()
+namespace: ArrayNamespaceFull = AttrDict()
 
 
 # https://numpy.org/doc/stable/user/basics.subclassing.html
