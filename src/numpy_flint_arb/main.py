@@ -337,3 +337,59 @@ def __array_namespace_info__() -> Any:
 
 
 namespace["__array_namespace_info__"] = __array_namespace_info__
+
+# Linear Algebra Functions
+for name in ["matmul", "matrix_transpose", "tensordot", "vecdot"]:
+    namespace[name] = getattr(np, name)
+
+# Manipulation Functions
+for name in [
+    "broadcast_arrays",
+    "broadcast_to",
+    "concat",
+    "expand_dims",
+    "flip",
+    "moveaxis",
+    "permute_dims",
+    "repeat",
+    "reshape",
+    "roll",
+    "squeeze",
+    "stack",
+    "tile",
+    "unstack",
+]:
+    namespace[name] = getattr(np, name)
+
+# Searching Functions
+for name in ["argmax", "argmin", "count_nonzero", "nonzero", "searchsorted", "where"]:
+    namespace[name] = getattr(np, name)
+
+# Set Functions
+for name in ["unique_all", "unique_counts", "unique_inverse", "unique_values"]:
+    namespace[name] = getattr(np, name)
+
+# Sorting Functions
+for name in ["argsort", "sort"]:
+    namespace[name] = getattr(np, name)
+
+# Statistical Functions
+for name in [
+    "cumulative_prod",
+    "cumulative_sum",
+    "max",
+    "mean",
+    "min",
+    "prod",
+    "std",
+    "sum",
+    "var",
+]:
+    namespace[name] = getattr(np, name)
+
+# Utility Functions
+for name in ["all", "any", "diff"]:
+    namespace[name] = getattr(np, name)
+
+__array_api_version__ = "2024.12"
+namespace["__array_api_version__"] = __array_api_version__
