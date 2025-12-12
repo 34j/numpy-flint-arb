@@ -76,7 +76,7 @@ def asarray(
         a = np.vectorize(lambda z: dtype(z))(a)
     elif np.isdtype(a.dtype, "integral") or np.isdtype(a.dtype, "bool"):
         a = np.vectorize(lambda z: dtype(int(z)))(a)
-    elif np.isdtype(a.dtype, "floating"):
+    elif np.isdtype(a.dtype, "real floating"):
         a = np.vectorize(lambda z: dtype(float(z)))(a)
     elif np.isdtype(a.dtype, "complex floating"):
         a = np.vectorize(lambda z: dtype(complex(z)))(a)
@@ -397,16 +397,18 @@ __array_api_version__ = "2024.12"
 namespace["__array_api_version__"] = __array_api_version__
 
 linalg: AttrDict[Any] = AttrDict()
+namespace["linalg"] = linalg
 
 
 def tomat(a: Any, /) -> Any:
-    if a.dtype == acb:
+    dtype = a.dtype
+    if dtype == acb:
         mattype = acb_mat
-    elif a.dtype == arb:
+    elif dtype == arb:
         mattype = arb_mat
-    elif a.dtype == fmpq:
+    elif dtype == fmpq:
         mattype = fmpq_mat
-    elif a.dtype == fmpz:
+    elif dtype == fmpz:
         mattype = fmpz_mat
     else:
         raise TypeError("Unsupported dtype for matrix conversion.")
@@ -415,23 +417,58 @@ def tomat(a: Any, /) -> Any:
     a = np.asarray([mattype(el.tolist()) for el in a])
     a = np.reshape(a, ashape[:-2])
     a = a.view(flarray)
-    a._fl_dtype = a.dtype
+    a._fl_dtype = dtype
     return a
 
 
 def frommat(a: Any, /) -> Any:
     ashape = a.shape
+    dtype = a.dtype
     a = np.reshape(a, (-1,))
-    a = np.asarray([asarray(el.table(), dtype=a.dtype.__element_type__) for el in a])
-    a = np.reshape(a, ashape + a[0].shape[1:])
+    a = np.asarray([el.table() for el in a])
+    a = np.reshape(a, ashape + a.shape[1:])
     a = a.view(flarray)
-    a._fl_dtype = a.dtype
+    a._fl_dtype = dtype
     return a
 
 
-def linalg_wrapper(f: Callable[..., Any]) -> Callable[..., Any]:
-    def wrapped(a: Any, /, **kwargs: Any) -> Any:
-        pass
+def vectorize_mat(
+    f_mat: Callable[..., Any], /, *, n_args: int = 1
+) -> Callable[..., Any]:
+    def wrapped(*args: Any, **kwargs: Any) -> Any:
+        args_ = list(args)
+        for i in range(n_args):
+            args_[i] = tomat(args_[i])
+        res = np.vectorize(lambda x: f_mat(x, *args_[n_args:], **kwargs))(
+            *args_[:n_args]
+        )
+        if isinstance(res.ravel()[0], (acb_mat, arb_mat, fmpz_mat, fmpq_mat)):
+            res = frommat(res)
+        return res
+
+    return wrapped
 
 
-linalg["cholesky"] = np.linalg.cholesky
+# linalg["cholesky"] = None
+# linalg["cross"] = None
+linalg["det"] = vectorize_mat(lambda x: x.det())
+linalg["diagonal"] = np.linalg.diagonal
+linalg["eigh"] = vectorize_mat(lambda x: x.eig(right=True))
+linalg["eigvalsh"] = vectorize_mat(lambda x: x.eig())
+linalg["inv"] = vectorize_mat(lambda x: x.inv())
+linalg["matmul"] = vectorize_mat(lambda x, y: x * y)
+linalg["matrix_norm"] = np.linalg.matrix_norm
+linalg["matrix_power"] = vectorize_mat(lambda x, n: x**n)
+# linalg["matrix_rank"] = None
+linalg["matrix_transpose"] = np.linalg.matrix_transpose
+# linalg["outer"] = None
+# linalg["pinv"] = None
+# linalg["qr"] = None
+# linalg["slogdet"] = None
+linalg["solve"] = vectorize_mat(lambda a, b: a.solve(b), n_args=2)
+# linalg["svd"] = None
+# linalg["svdvals"] = None
+linalg["tensordot"] = np.linalg.tensordot
+linalg["trace"] = np.linalg.trace
+linalg["vecdot"] = np.linalg.vecdot
+linalg["vector_norm"] = np.linalg.vector_norm
