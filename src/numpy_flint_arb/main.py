@@ -301,3 +301,39 @@ namespace["subtract"] = np.subtract
 namespace["tan"] = np.vectorize(lambda x: x.tan())
 namespace["tanh"] = np.vectorize(lambda x: x.tanh())
 namespace["trunc"] = np.vectorize(lambda x: x.floor() if x >= 0 else x.ceil())
+
+
+def __array_namespace_info__() -> Any:
+    info = np.__array_namespace_info__()
+
+    def default_dtypes(*, device: Any = None) -> Any:
+        return {
+            "real floating": arb,
+            "complex floating": acb,
+            "integral": fmpz,
+            "indexing": info.default_dtypes(device=device)["indexing"],
+        }
+
+    info["default_dtypes"] = default_dtypes
+
+    def dtypes(*, device: Any = None, kind: Any = None) -> list[Any]:
+        if kind in ["bool", "unsigned integer"]:
+            return []
+        elif kind in ["signed integer", "integral"]:
+            return [fmpz]
+        elif kind == "real floating":
+            return [arf, arb]
+        elif kind == "complex floating":
+            return [acb]
+        elif kind == "numeric":
+            return [fmpz, fmpq, arf, arb, acb]
+        elif isinstance(kind, tuple):
+            return list(set().union(*(dtypes(kind=k) for k in kind)))
+        else:
+            return []
+
+    info["dtypes"] = dtypes
+    return info
+
+
+namespace["__array_namespace_info__"] = __array_namespace_info__
