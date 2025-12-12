@@ -249,9 +249,9 @@ namespace["atan2"] = np.vectorize(lambda y, x: y.atan2(x))
 namespace["atanh"] = np.vectorize(lambda x: x.atanh())
 # no bitwise operations
 namespace["ceil"] = np.vectorize(lambda x: x.ceil())
-# no clip
+namespace["clip"] = np.clip
 namespace["conj"] = np.vectorize(lambda x: acb.conjugate(x))
-# no copysign
+namespace["copysign"] = np.copysign
 namespace["cos"] = np.vectorize(lambda x: x.cos())
 namespace["cosh"] = np.vectorize(lambda x: x.cosh())
 namespace["divide"] = np.divide
@@ -283,7 +283,8 @@ namespace["maximum"] = np.vectorize(lambda x1, x2: x1.max(x2))
 namespace["minimum"] = np.vectorize(lambda x1, x2: x1.min(x2))
 namespace["multiply"] = np.multiply
 namespace["negative"] = np.negative
-# namespace["nextafter"] = None
+# no nextafter
+namespace["nextafter"] = np.vectorize(lambda x1, x2: x1)
 namespace["not_equal"] = np.not_equal
 namespace["positive"] = np.positive
 namespace["pow"] = np.pow
