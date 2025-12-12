@@ -252,7 +252,9 @@ namespace["atanh"] = np.vectorize(lambda x: x.atanh())
 # no bitwise operations
 namespace["ceil"] = np.vectorize(lambda x: x.ceil())
 namespace["clip"] = np.clip
-namespace["conj"] = np.vectorize(lambda x: acb.conjugate(x))
+namespace["conj"] = (
+    lambda x: np.vectorize(lambda x: acb.conjugate(x))(x) if x.dtype == acb else x
+)
 namespace["copysign"] = np.copysign
 namespace["cos"] = np.vectorize(lambda x: x.cos())
 namespace["cosh"] = np.vectorize(lambda x: x.cosh())
@@ -466,10 +468,35 @@ linalg["matrix_transpose"] = np.linalg.matrix_transpose
 # linalg["pinv"] = None
 # linalg["qr"] = None
 # linalg["slogdet"] = None
-linalg["solve"] = vectorize_mat(lambda a, b: a.solve(b), n_args=2)
+
+
+def solve(a: Any, b: Any, /) -> Any:
+    expand_b = b.ndim < a.ndim
+    if expand_b:
+        b = b[..., :, None]
+    a_mat = tomat(a)
+    b_mat = tomat(b)
+    x_mat = np.vectorize(lambda A, B: print(A, B) or A.solve(B))(a_mat, b_mat)
+    x = frommat(x_mat)
+    if expand_b:
+        x = x[..., :, 0]
+    return x
+
+
+linalg["solve"] = solve
 # linalg["svd"] = None
 # linalg["svdvals"] = None
 linalg["tensordot"] = np.linalg.tensordot
 linalg["trace"] = np.linalg.trace
 linalg["vecdot"] = np.linalg.vecdot
 linalg["vector_norm"] = np.linalg.vector_norm
+
+random: AttrDict[Any] = AttrDict()
+namespace["random"] = random
+
+random["uniform"] = lambda *args, **kwargs: asarray(
+    np.random.uniform(*args, **kwargs), dtype=arb
+)
+random["normal"] = lambda *args, **kwargs: asarray(
+    np.random.normal(*args, **kwargs), dtype=arb
+)
