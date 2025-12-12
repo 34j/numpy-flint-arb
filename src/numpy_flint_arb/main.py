@@ -1,7 +1,7 @@
 from typing import Any
 
 import numpy as np
-from flint import acb, arb, arf, fmpq, fmpz
+from flint import acb, arb, arf, ctx, fmpq, fmpz
 
 dtypes = [acb, arb, arf, fmpz, fmpq]
 
@@ -18,31 +18,12 @@ def _fltype(x: Any) -> Any:
     for t in dtypes:
         if isinstance(el, t):
             return t
-    if np.isdtype(el.dtype, "integer"):
+    if np.isdtype(el.dtype, "integral") or np.isdtype(el.dtype, "bool"):
         return fmpz
     elif np.isdtype(el.dtype, "real floating"):
         return arb
     elif np.isdtype(el.dtype, "complex floating"):
         return acb
-    else:
-        raise ValueError("Unrecognized type")
-
-
-def _nptype(x: Any) -> Any:
-    el = np.asarray(x).ravel()[0]
-
-    if isinstance(el, fmpz):
-        return np.int64
-    elif isinstance(el, fmpq) or isinstance(el, arf) or isinstance(el, arb):
-        return np.float64
-    elif isinstance(el, acb):
-        return np.complex128
-    elif np.issubdtype(el.dtype, np.integer):
-        return np.int64
-    elif np.issubdtype(el.dtype, np.floating):
-        return np.float64
-    elif np.issubdtype(el.dtype, np.complexfloating):
-        return np.complex128
     else:
         raise ValueError("Unrecognized type")
 
@@ -92,7 +73,7 @@ def asarray(
 
     if a.dtype == np.object_:
         a = np.vectorize(lambda z: dtype(z))(a)
-    elif np.isdtype(a.dtype, "integer"):
+    elif np.isdtype(a.dtype, "integral") or np.isdtype(a.dtype, "bool"):
         a = np.vectorize(lambda z: dtype(int(z)))(a)
     elif np.isdtype(a.dtype, "floating"):
         a = np.vectorize(lambda z: dtype(float(z)))(a)
@@ -202,4 +183,74 @@ def is_dtype(dtype: Any, kind: Any) -> bool:
         return np.isdtype(dtype, kind)
 
 
-print(namespace["pi"] / namespace["arange"](10, dtype=arb))
+namespace["is_dtype"] = is_dtype
+
+
+def finfo(type: Any, /) -> Any:
+    return AttrDict(
+        {
+            "bits": ctx.prec(),
+            "eps": None,
+            "max": None,
+            "min": None,
+            "smallest_normal": None,
+            "dtype": arf,
+        }
+    )
+
+
+namespace["finfo"] = finfo
+
+
+def iinfo(type: Any, /) -> Any:
+    return AttrDict(
+        {
+            "bits": None,
+            "max": None,
+            "min": None,
+            "dtype": fmpz,
+        }
+    )
+
+
+namespace["iinfo"] = iinfo
+
+
+def result_type(*arrays_and_dtypes: Any) -> Any:
+    types = []
+    for x in arrays_and_dtypes:
+        if x in dtypes or np.issubdtype(x, np.number):
+            types.append(x)
+        else:
+            types.append(_fltype(x))
+    if acb in types:
+        return acb
+    elif arb in types:
+        return arb
+    elif arf in types:
+        return arf
+    elif fmpq in types:
+        return fmpq
+    else:
+        return fmpz
+
+
+namespace["result_type"] = result_type
+
+namespace["abs"] = np.abs
+namespace["acos"] = np.vectorize(lambda x: x.acos())
+namespace["acosh"] = np.vectorize(lambda x: x.acosh())
+namespace["add"] = np.add
+namespace["asin"] = np.vectorize(lambda x: x.asin())
+namespace["asinh"] = np.vectorize(lambda x: x.asinh())
+namespace["atan"] = np.vectorize(lambda x: x.atan())
+namespace["atan2"] = np.vectorize(lambda y, x: arb.atan2(x, y))
+namespace["atanh"] = np.vectorize(lambda x: x.atanh())
+# no bitwise operations
+namespace["ceil"] = np.vectorize(lambda x: x.ceil())
+# no clip
+namespace["conj"] = np.vectorize(lambda x: acb.conjugate(x))
+# no copysign
+namespace["cos"] = np.vectorize(lambda x: x.cos())
+namespace["cosh"] = np.vectorize(lambda x: x.cosh())
+namespace["divide"] = np.divide
