@@ -96,9 +96,13 @@ namespace["newaxis"] = None
 namespace["inf"] = arb("+inf")
 
 # Creation Functions
+# Simply call numpy functions
 for name in ["meshgrid", "tril", "triu"]:
     namespace[name] = getattr(np, name)
 
+# Need to asarray after creation
+# The values numpy returns are integers
+# and exact (no rounding issues) except for linspace
 for name in [
     "arange",
     "empty",
@@ -106,7 +110,6 @@ for name in [
     "eye",
     "full",
     "full_like",
-    "linspace",
     "ones",
     "ones_like",
     "zeros",
@@ -120,6 +123,22 @@ for name in [
         return a
 
     namespace[name] = _
+
+
+def linspace(
+    start: Any, stop: Any, /, num: int = 50, dtype: Any = None, device: Any = None
+) -> np.ndarray:
+    if start not in dtypes:
+        raise TypeError("start must be a flint type.")
+    if stop not in dtypes:
+        raise TypeError("stop must be a flint type.")
+    dtype = result_type(start, stop, dtype)
+    diff = (stop - start) / (num - 1) if num > 1 else 0
+    diff = dtype(diff)
+    return start + diff * namespace["arange"](num, dtype=dtype)
+
+
+namespace["linspace"] = linspace
 
 
 # Data Type Functions
@@ -240,6 +259,7 @@ def result_type(*arrays_and_dtypes: Any) -> Any:
 namespace["result_type"] = result_type
 
 # Elementwise Functions
+# Use np.vectorize to wrap flint methods
 namespace["abs"] = np.abs
 namespace["acos"] = np.vectorize(lambda x: x.acos())
 namespace["acosh"] = np.vectorize(lambda x: x.acosh())
@@ -344,10 +364,12 @@ def __array_namespace_info__() -> Any:
 namespace["__array_namespace_info__"] = __array_namespace_info__
 
 # Linear Algebra Functions
+# Simply call numpy functions
 for name in ["matmul", "matrix_transpose", "tensordot", "vecdot"]:
     namespace[name] = getattr(np, name)
 
 # Manipulation Functions
+# Simply call numpy functions
 for name in [
     "broadcast_arrays",
     "broadcast_to",
@@ -367,18 +389,22 @@ for name in [
     namespace[name] = getattr(np, name)
 
 # Searching Functions
+# Simply call numpy functions
 for name in ["argmax", "argmin", "count_nonzero", "nonzero", "searchsorted", "where"]:
     namespace[name] = getattr(np, name)
 
 # Set Functions
+# Simply call numpy functions
 for name in ["unique_all", "unique_counts", "unique_inverse", "unique_values"]:
     namespace[name] = getattr(np, name)
 
 # Sorting Functions
+# Simply call numpy functions
 for name in ["argsort", "sort"]:
     namespace[name] = getattr(np, name)
 
 # Statistical Functions
+# Simply call numpy functions
 for name in [
     "cumulative_prod",
     "cumulative_sum",
@@ -393,17 +419,32 @@ for name in [
     namespace[name] = getattr(np, name)
 
 # Utility Functions
+# Simply call numpy functions
 for name in ["all", "any", "diff"]:
     namespace[name] = getattr(np, name)
 
 __array_api_version__ = "2024.12"
 namespace["__array_api_version__"] = __array_api_version__
 
+# Linear Algebra Functions
 linalg: AttrDict[Any] = AttrDict()
 namespace["linalg"] = linalg
 
 
 def tomat(a: Any, /) -> Any:
+    """Convert array of shape (..., m, n) to
+    array of flint matrices of shape (m, n) of shape (..., ).
+
+    Parameters
+    ----------
+    a : Any
+        The input array of shape (..., m, n).
+
+    Returns
+    -------
+    Any
+        The output array of flint matrices of shape (..., ).
+    """
     dtype = a.dtype
     if dtype == acb:
         mattype = acb_mat
@@ -425,6 +466,19 @@ def tomat(a: Any, /) -> Any:
 
 
 def frommat(a: Any, /) -> Any:
+    """Convert array of flint matrices of shape (m, n) of shape (..., )
+    to array of shape (..., m, n).
+
+    Parameters
+    ----------
+    a : Any
+        The input array of flint matrices of shape (..., ).
+
+    Returns
+    -------
+    Any
+        The output array of shape (..., m, n).
+    """
     ashape = a.shape
     dtype = a.dtype
     a = np.reshape(a, (-1,))
@@ -438,6 +492,23 @@ def frommat(a: Any, /) -> Any:
 def vectorize_mat(
     f_mat: Callable[..., Any], /, *, n_args: int = 1
 ) -> Callable[..., Any]:
+    """Return a function to call a function for flint matrices
+    along with last 2 axes.
+
+    Parameters
+    ----------
+    f_mat : Callable[..., Any]
+        The function to be called for flint matrices.
+    n_args : int, optional
+        The number of arguments to be converted to flint matrices,
+        by default 1.
+
+    Returns
+    -------
+    Callable[..., Any]
+        The wrapped function.
+    """
+
     def wrapped(*args: Any, **kwargs: Any) -> Any:
         args_ = list(args)
         for i in range(n_args):
@@ -491,6 +562,8 @@ linalg["trace"] = np.linalg.trace
 linalg["vecdot"] = np.linalg.vecdot
 linalg["vector_norm"] = np.linalg.vector_norm
 
+# Random Functions
+# Simply call asarray after generating with numpy
 random: AttrDict[Any] = AttrDict()
 namespace["random"] = random
 
