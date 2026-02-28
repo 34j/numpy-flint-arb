@@ -272,8 +272,8 @@ namespace["atanh"] = np.vectorize(lambda x: x.atanh())
 # no bitwise operations
 namespace["ceil"] = np.vectorize(lambda x: x.ceil())
 namespace["clip"] = np.clip
-namespace["conj"] = (
-    lambda x: np.vectorize(lambda x: acb.conjugate(x))(x) if x.dtype == acb else x
+namespace["conj"] = lambda x: (
+    np.vectorize(lambda x: acb.conjugate(x))(x) if x.dtype == acb else x
 )
 namespace["copysign"] = np.copysign
 namespace["cos"] = np.vectorize(lambda x: x.cos())
@@ -432,7 +432,8 @@ namespace["linalg"] = linalg
 
 
 def tomat(a: Any, /) -> Any:
-    """Convert array of shape (..., m, n) to
+    """
+    Convert array of shape (..., m, n) to
     array of flint matrices of shape (m, n) of shape (..., ).
 
     Parameters
@@ -444,6 +445,7 @@ def tomat(a: Any, /) -> Any:
     -------
     Any
         The output array of flint matrices of shape (..., ).
+
     """
     dtype = a.dtype
     if dtype == acb:
@@ -466,7 +468,8 @@ def tomat(a: Any, /) -> Any:
 
 
 def frommat(a: Any, /) -> Any:
-    """Convert array of flint matrices of shape (m, n) of shape (..., )
+    """
+    Convert array of flint matrices of shape (m, n) of shape (..., )
     to array of shape (..., m, n).
 
     Parameters
@@ -478,6 +481,7 @@ def frommat(a: Any, /) -> Any:
     -------
     Any
         The output array of shape (..., m, n).
+
     """
     ashape = a.shape
     dtype = a.dtype
@@ -492,7 +496,8 @@ def frommat(a: Any, /) -> Any:
 def vectorize_mat(
     f_mat: Callable[..., Any], /, *, n_args: int = 1
 ) -> Callable[..., Any]:
-    """Return a function to call a function for flint matrices
+    """
+    Return a function to call a function for flint matrices
     along with last 2 axes.
 
     Parameters
@@ -507,6 +512,7 @@ def vectorize_mat(
     -------
     Callable[..., Any]
         The wrapped function.
+
     """
 
     def wrapped(*args: Any, **kwargs: Any) -> Any:
