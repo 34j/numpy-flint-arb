@@ -44,7 +44,35 @@ Arbitrary precision ball arithmetic (interval arithmetic) dtype in NumPy
 
 Install this via pip (or your favourite package manager):
 
-`pip install numpy-flint-arb`
+```shell
+pip install numpy-flint-arb
+```
+
+## Usage
+
+Import `numpy_flint_arb.np` instead of `numpy`:
+
+```python
+A = np.random.normal(size=(2, 2))
+b = np.random.normal(size=(2,))
+x = np.linalg.solve(A, b)
+b_approx = A @ x
+assert np.all(np.contains(b_approx, b))
+```
+
+## What it does
+
+- This package adds a `flarray` which [subclasses `ndarray`](https://numpy.org/doc/stable/user/basics.subclassing.html) in order to
+  - Override `__array_namespace__` to `numpy_flint_arb.np`
+  - Override `dtype` to return newly added `_fl_dtype` private attribute, since the actual internal dtype `object` cannot be overridden.
+  - Override `__array_finalize__` as recommended by the NumPy docs to return `flarray` with proper `_fl_dtype` instead of `ndarray` after Numpy operations.
+- Partially supports `linalg` and `(scipy.)special` functions.
+- Adds `tomat()` and `frommat()` to treat `flarray` as array of `arb_mat` / `acb_mat`, so that we can perform matrix operations like `np.linalg.solve` on `flarray`.
+- Does not perform any parallelization to avoid complexity and to fully utilize the great `python-flint` library
+  - Using `arb_series` and `acb_series` may be faster for additions but this is too hacky.
+  - Defining custom `dtype` is way too complicated
+  - Writing C extension would be theoretically also possible but is still too complicated.
+- Does not support `in` operator since it tries to convert the return value to bool. Use newly added `np.contains(x, y)` and `np.overlaps(x, y)` instead.
 
 ## Contributors ✨
 
