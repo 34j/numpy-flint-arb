@@ -41,6 +41,7 @@ dev = [
   "ndindex>=1.10.1",
   "pytest>=8,<9",
   "pytest-cov>=6,<7",
+  "pytest-env>=1.2",
   "pytest-json-report>=1.5",
 ]
 docs = [
@@ -100,6 +101,10 @@ addopts = [
   "--cov-report=xml",
 ]
 pythonpath = [ "src" ]
+
+[tool.pytest_env]
+ARRAY_API_TESTS_MODULE = "numpy_flint_arb.np"
+ARRAY_API_TESTS_SKIP_DTYPES = "float32,complex64,uint16,uint32,uint64,int8,int16,int32,int64"
 
 [tool.coverage]
 run.branch = true

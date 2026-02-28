@@ -210,7 +210,7 @@ namespace["is_dtype"] = is_dtype
 def finfo(type: Any, /) -> Any:
     return AttrDict(
         {
-            "bits": ctx.prec(),
+            "bits": ctx.prec,
             "eps": None,
             "max": None,
             "min": None,
@@ -330,6 +330,13 @@ namespace["trunc"] = np.vectorize(lambda x: x.floor() if x >= 0 else x.ceil())
 
 def __array_namespace_info__() -> Any:
     info = np.__array_namespace_info__()
+    new_info: AttrDict[Any] = AttrDict(
+        {
+            "capabilities": info.capabilities,
+            "default_device": info.default_device,
+            "devices": info.devices,
+        }
+    )
 
     def default_dtypes(*, device: Any = None) -> Any:
         return {
@@ -339,26 +346,31 @@ def __array_namespace_info__() -> Any:
             "indexing": info.default_dtypes(device=device)["indexing"],
         }
 
-    info["default_dtypes"] = default_dtypes
+    new_info["default_dtypes"] = default_dtypes
 
-    def dtypes(*, device: Any = None, kind: Any = None) -> list[Any]:
-        if kind in ["bool", "unsigned integer"]:
-            return []
+    def dtypes(*, device: Any = None, kind: Any = None) -> dict[str, Any]:
+        if kind in ["bool"]:
+            return {"bool": np.bool}
+        elif kind in ["unsigned integer"]:
+            return {}
         elif kind in ["signed integer", "integral"]:
-            return [fmpz]
+            return {"fmpz": fmpz}
         elif kind == "real floating":
-            return [arf, arb]
+            return {"arb": arb, "arf": arf}
         elif kind == "complex floating":
-            return [acb]
+            return {"acb": acb}
         elif kind == "numeric":
-            return [fmpz, fmpq, arf, arb, acb]
+            return {"fmpz": fmpz, "fmpq": fmpq, "arb": arb, "acb": acb, "arf": arf}
         elif isinstance(kind, tuple):
-            return list(set().union(*(dtypes(kind=k) for k in kind)))
+            res = {}
+            for k in kind:
+                res.update(dtypes(device=device, kind=k))
+            return res
         else:
-            return []
+            return {}
 
-    info["dtypes"] = dtypes
-    return info
+    new_info["dtypes"] = dtypes
+    return new_info
 
 
 namespace["__array_namespace_info__"] = __array_namespace_info__
@@ -422,6 +434,19 @@ for name in [
 # Simply call numpy functions
 for name in ["all", "any", "diff"]:
     namespace[name] = getattr(np, name)
+
+# Data Types
+for t in ["bool", "bool_"]:
+    namespace[t] = np.bool
+for t in ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"]:
+    namespace[t] = fmpz
+for t in ["float32", "float64"]:
+    namespace[t] = arb
+for t in ["complex64", "complex128"]:
+    namespace[t] = acb
+
+# Must be a ModuleType
+namespace["__name__"] = "numpy_flint_arb.np"
 
 __array_api_version__ = "2024.12"
 namespace["__array_api_version__"] = __array_api_version__
@@ -579,3 +604,53 @@ random["uniform"] = lambda *args, **kwargs: asarray(
 random["normal"] = lambda *args, **kwargs: asarray(
     np.random.normal(*args, **kwargs), dtype=arb
 )
+
+# Special Functions (scipy.special)
+special: AttrDict[Any] = AttrDict()
+namespace["special"] = special
+
+special["airy"] = np.vectorize(lambda x: x.airy())
+for name in ["jv", "jn"]:
+    special[name] = lambda v, x: np.vectorize(lambda x: x.bessel_j(v))(x)
+for name in ["yv", "yn"]:
+    special[name] = lambda v, x: np.vectorize(lambda x: x.bessel_y(v))(x)
+for name in ["iv"]:  # somewhat "in" is not in scipy.special
+    special[name] = lambda v, x: np.vectorize(lambda x: x.bessel_i(v))(x)
+for name in ["kv", "kn"]:
+    special[name] = lambda v, x: np.vectorize(lambda x: x.bessel_k(v))(x)
+special["hankel1"] = lambda v, x: np.vectorize(
+    lambda x: (
+        acb(2)
+        / acb(1j)
+        / acb.pi()
+        * acb.exp(-1j * acb.pi() * v / 2)
+        * acb.bessel_k(x * acb.exp(-1j * acb.pi() / 2), v)
+    )
+)(x)
+special["hankel2"] = lambda v, x: np.vectorize(
+    lambda x: (
+        acb(-2)
+        / acb(1j)
+        / acb.pi()
+        * acb.exp(1j * acb.pi() * v / 2)
+        * acb.bessel_k(x * acb.exp(1j * acb.pi() / 2), v)
+    )
+)(x)
+
+special["gamma"] = np.vectorize(lambda x: x.gamma())
+special["gammaln"] = np.vectorize(lambda x: x.lgamma())
+special["loggamma"] = np.vectorize(lambda x: x.lgamma())
+special["beta"] = np.vectorize(lambda x, y: x.beta(y))
+special["rgamma"] = np.vectorize(lambda x: x.rgamma())
+special["digamma"] = np.vectorize(lambda x: x.digamma())
+
+special["erf"] = np.vectorize(lambda x: x.erf())
+special["erfc"] = np.vectorize(lambda x: x.erfc())
+special["erfi"] = np.vectorize(lambda x: x.erfi())
+special["fresnel"] = lambda x: (
+    np.vectorize(lambda x: x.fresnel_s())(x),
+    np.vectorize(lambda x: x.fresnel_c())(x),
+)
+
+special["legendre_p"] = lambda n, x: np.vectorize(lambda x: x.legendre_p(n))(x)
+special["lqn"] = lambda n, x: np.vectorize(lambda x: x.legendre_q(n))(x)
