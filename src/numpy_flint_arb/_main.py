@@ -1,8 +1,8 @@
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Protocol
 
 import numpy as np
-from array_api.latest import ArrayNamespaceFull
+from array_api.latest import Array, ArrayNamespaceFull
 from flint import acb, acb_mat, arb, arb_mat, arf, ctx, fmpq, fmpq_mat, fmpz, fmpz_mat
 
 dtypes = [acb, arb, arf, fmpz, fmpq]
@@ -36,7 +36,26 @@ class AttrDict[TV](dict[str, TV]):
         self.__dict__ = self
 
 
-namespace: ArrayNamespaceFull = AttrDict()
+class ArrayNamespaceFullFlintArb[TArray: Array, TDtype, TDevice](
+    ArrayNamespaceFull[TArray, TDtype, TDevice], Protocol
+):
+    def contains(self, x: TArray, y: TArray) -> TArray:
+        """Returns nonzero iff y is contained in x."""
+        ...
+
+    def contains_integer(self, x: TArray) -> TArray:
+        """
+        Returns nonzero iff the complex interval
+        represented by x contains an integer.
+        """
+        ...
+
+    def overlaps(self, x: TArray, y: TArray) -> TArray:
+        """Returns nonzero iff x and y have some point in common."""
+        ...
+
+
+namespace: ArrayNamespaceFullFlintArb["flarray", Any, Any] = AttrDict()  # type: ignore
 
 
 # https://numpy.org/doc/stable/user/basics.subclassing.html
@@ -56,14 +75,19 @@ class flarray(np.ndarray):
     def __array_namespace__(self, /, *, api_version: Any = None) -> Any:
         return namespace
 
+    def __contains__(self, value: object) -> "flarray":
+        raise NotImplementedError(
+            "Since 'in' operator tries to convert the return value to bool, "
+            "use np.contains(x, y) instead of y in x."
+        )
+        # return np.vectorize(lambda self, value: self in value)(self, value)
+
 
 def asarray(
     obj: Any, /, *, dtype: Any = None, device: Any = None, copy: bool | None = None
 ) -> np.ndarray:
     if dtype is not None and dtype not in dtypes:
-        raise TypeError(
-            f"dtype must be one of {', '.join([str(t) for t in dtypes])}, got {dtype}."
-        )
+        raise TypeError(f"dtype must be one of {', '.join([str(t) for t in dtypes])}, got {dtype}.")
     a = np.asarray(obj)
     el = a.ravel()[0]
     if dtype is not None and isinstance(el, dtype) and (copy is False or copy is None):
@@ -87,6 +111,11 @@ def asarray(
 
 
 namespace["asarray"] = asarray
+
+# Specific functions
+namespace["contains"] = np.vectorize(lambda x, y: x.contains(y))
+namespace["contains_integer"] = np.vectorize(lambda x: x.contains_integer())
+namespace["overlaps"] = np.vectorize(lambda x, y: x.overlaps(y))
 
 # Constants
 namespace["e"] = arb(1).exp()
@@ -142,9 +171,7 @@ namespace["linspace"] = linspace
 
 
 # Data Type Functions
-def astype(
-    x: Any, dtype: Any, /, *, copy: bool = True, device: Any = None
-) -> np.ndarray:
+def astype(x: Any, dtype: Any, /, *, copy: bool = True, device: Any = None) -> np.ndarray:
     return asarray(x, dtype=dtype, copy=copy)
 
 
@@ -272,9 +299,7 @@ namespace["atanh"] = np.vectorize(lambda x: x.atanh())
 # no bitwise operations
 namespace["ceil"] = np.vectorize(lambda x: x.ceil())
 namespace["clip"] = np.clip
-namespace["conj"] = lambda x: (
-    np.vectorize(lambda x: acb.conjugate(x))(x) if x.dtype == acb else x
-)
+namespace["conj"] = lambda x: np.vectorize(lambda x: acb.conjugate(x))(x) if x.dtype == acb else x
 namespace["copysign"] = np.copysign
 namespace["cos"] = np.vectorize(lambda x: x.cos())
 namespace["cosh"] = np.vectorize(lambda x: x.cosh())
@@ -287,9 +312,7 @@ namespace["floor_divide"] = np.floor_divide
 namespace["greater"] = np.greater
 namespace["greater_equal"] = np.greater_equal
 namespace["hypot"] = np.vectorize(lambda x1, x2: abs(x1 + x2 * 1j))
-namespace["imag"] = np.vectorize(
-    lambda x: x.imag if hasattr(x, "imag") else acb.imag(x)
-)
+namespace["imag"] = np.vectorize(lambda x: x.imag if hasattr(x, "imag") else acb.imag(x))
 namespace["isfinite"] = np.vectorize(
     lambda x: x.is_finite() if hasattr(x, "is_finite") else np.isfinite(x)
 )
@@ -518,9 +541,7 @@ def frommat(a: Any, /) -> Any:
     return a
 
 
-def vectorize_mat(
-    f_mat: Callable[..., Any], /, *, n_args: int = 1
-) -> Callable[..., Any]:
+def vectorize_mat(f_mat: Callable[..., Any], /, *, n_args: int = 1) -> Callable[..., Any]:
     """
     Return a function to call a function for flint matrices
     along with last 2 axes.
@@ -544,9 +565,7 @@ def vectorize_mat(
         args_ = list(args)
         for i in range(n_args):
             args_[i] = tomat(args_[i])
-        res = np.vectorize(lambda x: f_mat(x, *args_[n_args:], **kwargs))(
-            *args_[:n_args]
-        )
+        res = np.vectorize(lambda x: f_mat(x, *args_[n_args:], **kwargs))(*args_[:n_args])
         if isinstance(res.ravel()[0], (acb_mat, arb_mat, fmpz_mat, fmpq_mat)):
             res = frommat(res)
         return res
@@ -578,7 +597,7 @@ def solve(a: Any, b: Any, /) -> Any:
         b = b[..., :, None]
     a_mat = tomat(a)
     b_mat = tomat(b)
-    x_mat = np.vectorize(lambda A, B: print(A, B) or A.solve(B))(a_mat, b_mat)
+    x_mat = np.vectorize(lambda A, B: A.solve(B))(a_mat, b_mat)
     x = frommat(x_mat)
     if expand_b:
         x = x[..., :, 0]
@@ -598,12 +617,8 @@ linalg["vector_norm"] = np.linalg.vector_norm
 random: AttrDict[Any] = AttrDict()
 namespace["random"] = random
 
-random["uniform"] = lambda *args, **kwargs: asarray(
-    np.random.uniform(*args, **kwargs), dtype=arb
-)
-random["normal"] = lambda *args, **kwargs: asarray(
-    np.random.normal(*args, **kwargs), dtype=arb
-)
+random["uniform"] = lambda *args, **kwargs: asarray(np.random.uniform(*args, **kwargs), dtype=arb)
+random["normal"] = lambda *args, **kwargs: asarray(np.random.normal(*args, **kwargs), dtype=arb)
 
 # Special Functions (scipy.special)
 special: AttrDict[Any] = AttrDict()
