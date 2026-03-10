@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.2.1 (2026-03-10)
+
+### Bug fixes
+
+- Trigger release ([`3e054da`](https://github.com/34j/numpy-flint-arb/commit/3e054da217e8bbb31fd3772c99daba1c2c90a2ea))
+
 ## v1.2.0 (2026-03-10)
 
 ### Features
