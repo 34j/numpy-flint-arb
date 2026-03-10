@@ -586,8 +586,8 @@ dev = [
     { name = "coverage" },
     { name = "hypothesis", specifier = ">=6.151.9" },
     { name = "ndindex", specifier = ">=1.10.1" },
-    { name = "pytest", specifier = ">=9,<10" },
-    { name = "pytest-cov", specifier = ">=7,<8" },
+    { name = "pytest", specifier = ">=9.0.2" },
+    { name = "pytest-cov", specifier = ">=7" },
     { name = "pytest-env", specifier = ">=1.2" },
     { name = "pytest-json-report", specifier = ">=1.5" },
 ]

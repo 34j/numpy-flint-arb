@@ -1,4 +1,9 @@
-from numpy_flint_arb import np
+from typing import Any
+
+import pytest
+from flint import acb, arb, arf
+
+from numpy_flint_arb import allow_input, np
 
 
 def test_linsolve():
@@ -23,3 +28,24 @@ def test_comparisons():
     y = x + 1
     assert np.all(y > x)
     assert np.all(y >= x)
+
+
+@pytest.mark.parametrize("input", [0.5, 1 + 1j])
+@pytest.mark.parametrize("dtype", [arb, acb])
+def test_allow_input(input: Any, dtype: Any) -> None:
+    if dtype == arb and isinstance(input, complex):
+        pytest.skip("acb does not allow float input")
+    np.asarray(1, dtype=dtype)
+    with pytest.raises(ExceptionGroup):
+        np.asarray(input, dtype=dtype)
+    with allow_input(interval=True, float=True):
+        np.asarray(input, dtype=dtype)
+
+
+@pytest.mark.parametrize("input", [0.5])
+def test_allow_input_arf(input: Any) -> None:
+    np.asarray(1, dtype=arf)
+    with pytest.raises(ExceptionGroup):
+        np.asarray(input, dtype=arf)
+    with allow_input(float=True):
+        np.asarray(input, dtype=arf)
