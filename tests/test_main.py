@@ -1,4 +1,7 @@
-from numpy_flint_arb import np
+import pytest
+from flint import arf
+
+from numpy_flint_arb import allow_input, np
 
 
 def test_linsolve():
@@ -23,3 +26,17 @@ def test_comparisons():
     y = x + 1
     assert np.all(y > x)
     assert np.all(y >= x)
+
+
+def test_allow_input():
+    with pytest.raises(ExceptionGroup):
+        np.asarray(0.5)
+    with allow_input(interval=True, float=True):
+        np.asarray(0.5)
+
+
+def test_allow_input_arf():
+    with pytest.raises(ExceptionGroup):
+        np.asarray(0.5, dtype=arf)
+    with allow_input(float=True):
+        np.asarray(0.5, dtype=arf)

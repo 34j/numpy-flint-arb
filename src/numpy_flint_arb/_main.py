@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from contextlib import contextmanager
 from typing import Any, Protocol
 
 import numpy as np
@@ -6,6 +7,40 @@ from array_api.latest import Array, ArrayNamespaceFull
 from flint import acb, acb_mat, arb, arb_mat, arf, ctx, fmpq, fmpq_mat, fmpz, fmpz_mat
 
 dtypes = [acb, arb, arf, fmpz, fmpq]
+
+_ALLOW_FLOAT_INPUT = False
+_ALLOW_NONINTERVAL_INPUT = False
+
+
+@contextmanager
+def allow_input(*, interval: bool = False, float: bool = False) -> Any:
+    global _ALLOW_FLOAT_INPUT, _ALLOW_NONINTERVAL_INPUT
+    old_allow_float_input = _ALLOW_FLOAT_INPUT
+    old_allow_noninterval_input = _ALLOW_NONINTERVAL_INPUT
+    _ALLOW_FLOAT_INPUT = float
+    _ALLOW_NONINTERVAL_INPUT = interval
+    try:
+        yield
+    finally:
+        _ALLOW_FLOAT_INPUT = old_allow_float_input
+        _ALLOW_NONINTERVAL_INPUT = old_allow_noninterval_input
+
+
+class NotAllowedError(ValueError):
+    pass
+
+
+class FloatInputNotAllowedError(NotAllowedError):
+    def __init__(self) -> None:
+        super().__init__("Float input is not allowed. Use allow_input context manager to allow it.")
+
+
+class NonIntervalInputNotAllowedError(NotAllowedError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Non-interval input is not allowed. Use allow_input context manager to allow it."
+        )
+
 
 # acb: complex ball
 # arb: real ball
@@ -97,14 +132,24 @@ def asarray(
     elif dtype is None:
         dtype = _fltype(a)
 
-    if a.dtype == np.object_:
+    dtype_a = a.dtype
+    if dtype_a == np.object_:
+        if isinstance(el, arf) and dtype != arf:
+            raise NonIntervalInputNotAllowedError()
         a = np.vectorize(lambda z: dtype(z))(a)
-    elif np.isdtype(a.dtype, "integral") or np.isdtype(a.dtype, "bool"):
+    elif np.isdtype(dtype_a, "integral") or np.isdtype(dtype_a, "bool"):
         a = np.vectorize(lambda z: dtype(int(z)))(a)
-    elif np.isdtype(a.dtype, "real floating"):
-        a = np.vectorize(lambda z: dtype(float(z)))(a)
-    elif np.isdtype(a.dtype, "complex floating"):
-        a = np.vectorize(lambda z: dtype(complex(z)))(a)
+    elif np.isdtype(dtype_a, "real floating") or np.isdtype(dtype_a, "complex floating"):
+        errors: list[NotAllowedError] = []
+        if not _ALLOW_FLOAT_INPUT:
+            errors.append(FloatInputNotAllowedError())
+        if not _ALLOW_NONINTERVAL_INPUT and dtype in [arb, acb]:
+            errors.append(NonIntervalInputNotAllowedError())
+        if errors:
+            raise ExceptionGroup("Input is not allowed.", errors)
+        a = np.vectorize(
+            lambda z: dtype((float if np.isdtype(dtype_a, "real floating") else complex)((z)))
+        )(a)
     a = a.view(flarray)
     a._fl_dtype = dtype
     return a
@@ -617,8 +662,19 @@ linalg["vector_norm"] = np.linalg.vector_norm
 random: AttrDict[Any] = AttrDict()
 namespace["random"] = random
 
-random["uniform"] = lambda *args, **kwargs: asarray(np.random.uniform(*args, **kwargs), dtype=arb)
-random["normal"] = lambda *args, **kwargs: asarray(np.random.normal(*args, **kwargs), dtype=arb)
+
+def _uniform(*args: Any, **kwargs: Any) -> Any:
+    with allow_input(float=True, interval=True):
+        return asarray(np.random.uniform(*args, **kwargs), dtype=kwargs.get("dtype", arb))
+
+
+def _normal(*args: Any, **kwargs: Any) -> Any:
+    with allow_input(float=True, interval=True):
+        return asarray(np.random.normal(*args, **kwargs), dtype=kwargs.get("dtype", arb))
+
+
+random["uniform"] = _uniform
+random["normal"] = _normal
 
 # Special Functions (scipy.special)
 special: AttrDict[Any] = AttrDict()
