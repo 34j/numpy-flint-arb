@@ -91,6 +91,11 @@ with allow_input(interval=True, float=True):
     np.asarray(0.5, dtype=arf)
 ```
 
+## Randomness
+
+Since `python-flint` does not support random number generation, the `random` module just uses `np.random`.
+Therefore, the return values may not be random up to the precision of `arb`, `acb`.
+
 ## What it does
 
 - This package adds a `flarray` which [subclasses `ndarray`](https://numpy.org/doc/stable/user/basics.subclassing.html) in order to
