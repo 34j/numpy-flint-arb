@@ -61,6 +61,14 @@ def _fltype(x: Any) -> Any:
         return arb
     elif np.isdtype(el.dtype, "complex floating"):
         return acb
+    elif np.issubdtype(el.dtype, np.str_):
+        # if not np.any(np.vectorize(lambda z: "+/-" in str(z))(x)):
+        #     return arf
+        return arb
+    elif np.issubdtype(el.dtype, np.bytes_):
+        # if not np.any(np.vectorize(lambda z: "+/-" in str(z))(x)):
+        #     return arf
+        return arb
     else:
         raise ValueError(f"Unrecognized type {el.dtype}.")
 

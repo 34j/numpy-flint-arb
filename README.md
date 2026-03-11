@@ -62,7 +62,7 @@ b_approx = A @ x
 assert np.all(np.contains(b_approx, b))
 ```
 
-### Input Check
+### `asarray()` and Input Check
 
 To avoid mixing ordinary floats like `float` or `np.float`, `flarray` for `arb`, `acb` only accepts integers, `arb` or `acb` and `flarray` for `arf` only accepts integers and `arf, arb`.
 
@@ -89,6 +89,45 @@ with allow_input(float=True):
     np.asarray(0.5, dtype=arf)
 with allow_input(interval=True, float=True):
     np.asarray(0.5, dtype=arf)
+```
+
+Note that `allow_input()` does not affect for `arf()`, `arb()`, `acb()` constructors, but only for `np.asarray()` and `flarray()`.
+
+#### `str` input
+
+One can input `str` to `asarray()`.
+If `dtype` is not specified, it will be automatically detected as `arb`. However, specifying `dtype` explicitly is recommended.
+
+#### `asarray(dtype=acb)`
+
+`asarray()` does not support separated input for real and imaginary parts.
+
+Do the following instead, as `acb(1j)` is exact.
+
+```python
+from flint import arb, acb
+from numpy_flint_arb import np
+
+with pytest.raises(Exception):
+    # python-flint does not support single argument str input for acb
+    np.asarray("[0.5 +/- 0.001] + [0.5 +/- 0.001]j", dtype=acb)
+with pytest.raises(Exception):
+    # This is inexact and raises an error without allow_input()
+    np.asarray(0.5 + 0.5j, dtype=acb)
+with pytest.raises(Exception):
+    # Mixing complex and arb is not supported by python-flint
+    np.asarray("0.5 +/- 0.001", dtype=arb) + 1j * np.asarray("0.5 +/- 0.001", dtype=arb)
+```
+
+```python
+>>> # This is possible but not recommended
+>>> np.asarray("0.5 +/- 0.001", dtype=arb) + 1j * np.asarray("0.5 +/- 0.001", dtype=acb)
+flarray([0.50 +/- 1.01e-3] + [0.50 +/- 1.01e-3]j,
+        dtype=<class 'flint.types.arb.arb'>)
+>>> # Recommended
+>>> np.asarray("0.5 +/- 0.001", dtype=arb) + acb(1j) * np.asarray("0.5 +/- 0.001", dtype=arb)
+flarray([0.50 +/- 1.01e-3] + [0.50 +/- 1.01e-3]j,
+        dtype=<class 'flint.types.arb.arb'>)
 ```
 
 ## Randomness
