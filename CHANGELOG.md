@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.0 (2026-03-11)
+
+### Features
+
+- Add fft ([`b36855f`](https://github.com/34j/numpy-flint-arb/commit/b36855fded1fcadd6eea65751a89a8ed811a4370))
+
 ## v1.2.1 (2026-03-10)
 
 ### Bug fixes
