@@ -110,17 +110,24 @@ from numpy_flint_arb import np
 
 with pytest.raises(Exception):
     # python-flint does not support single argument str input for acb
-    np.asarray("0.5 + 0.5j", dtype=acb)
+    np.asarray("[0.5 +/- 0.001] + [0.5 +/- 0.001]j", dtype=acb)
 with pytest.raises(Exception):
     # This is inexact and raises an error without allow_input()
     np.asarray(0.5 + 0.5j, dtype=acb)
 with pytest.raises(Exception):
     # Mixing complex and arb is not supported by python-flint
-    np.asarray("0.5", dtype=arb) + 1j * np.asarray("0.5", dtype=arb)
-# This is possible but not recommended
-np.asarray("0.5", dtype=arb) + 1j * np.asarray("0.5", dtype=acb)
-# Recommended
-np.asarray("0.5", dtype=arb) + acb(1j) * np.asarray("0.5", dtype=arb)
+    np.asarray("0.5 +/- 0.001", dtype=arb) + 1j * np.asarray("0.5 +/- 0.001", dtype=arb)
+```
+
+```python
+>>> # This is possible but not recommended
+>>> np.asarray("0.5 +/- 0.001", dtype=arb) + 1j * np.asarray("0.5 +/- 0.001", dtype=acb)
+flarray([0.50 +/- 1.01e-3] + [0.50 +/- 1.01e-3]j,
+        dtype=<class 'flint.types.arb.arb'>)
+>>> # Recommended
+>>> np.asarray("0.5 +/- 0.001", dtype=arb) + acb(1j) * np.asarray("0.5 +/- 0.001", dtype=arb)
+flarray([0.50 +/- 1.01e-3] + [0.50 +/- 1.01e-3]j,
+        dtype=<class 'flint.types.arb.arb'>)
 ```
 
 ## Randomness
