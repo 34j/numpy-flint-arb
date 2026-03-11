@@ -62,7 +62,7 @@ b_approx = A @ x
 assert np.all(np.contains(b_approx, b))
 ```
 
-### Input Check
+### `asarray()` and Input Check
 
 To avoid mixing ordinary floats like `float` or `np.float`, `flarray` for `arb`, `acb` only accepts integers, `arb` or `acb` and `flarray` for `arf` only accepts integers and `arf, arb`.
 
@@ -90,6 +90,11 @@ with allow_input(float=True):
 with allow_input(interval=True, float=True):
     np.asarray(0.5, dtype=arf)
 ```
+
+Note that `allow_input()` does not affect for `arf()`, `arb()`, `acb()` constructors, but only for `np.asarray()` and `flarray()`.
+
+One can input `str` or `bytes` to `asarray()`.
+If `dtype` is not specified, it will be automatically detected as `arb`. However, specifying `dtype` explicitly is recommended.
 
 ## Randomness
 
