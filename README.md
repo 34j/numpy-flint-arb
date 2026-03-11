@@ -93,8 +93,35 @@ with allow_input(interval=True, float=True):
 
 Note that `allow_input()` does not affect for `arf()`, `arb()`, `acb()` constructors, but only for `np.asarray()` and `flarray()`.
 
-One can input `str` or `bytes` to `asarray()`.
+#### `str` input
+
+One can input `str` to `asarray()`.
 If `dtype` is not specified, it will be automatically detected as `arb`. However, specifying `dtype` explicitly is recommended.
+
+#### `asarray(dtype=acb)`
+
+`asarray()` does not support separated input for real and imaginary parts.
+
+Do the following instead, as `acb(1j)` is exact.
+
+```python
+from flint import arb, acb
+from numpy_flint_arb import np
+
+with pytest.raises(Exception):
+    # python-flint does not support single argument str input for acb
+    np.asarray("0.5 + 0.5j", dtype=acb)
+with pytest.raises(Exception):
+    # This is inexact and raises an error without allow_input()
+    np.asarray(0.5 + 0.5j, dtype=acb)
+with pytest.raises(Exception):
+    # Mixing complex and arb is not supported by python-flint
+    np.asarray("0.5", dtype=arb) + 1j * np.asarray("0.5", dtype=arb)
+# This is possible but not recommended
+np.asarray("0.5", dtype=arb) + 1j * np.asarray("0.5", dtype=acb)
+# Recommended
+np.asarray("0.5", dtype=arb) + acb(1j) * np.asarray("0.5", dtype=arb)
+```
 
 ## Randomness
 
