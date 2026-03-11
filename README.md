@@ -64,6 +64,8 @@ assert np.all(np.contains(b_approx, b))
 
 ### `asarray()` and Input Check
 
+### `asarray()` and Input Check
+
 To avoid mixing ordinary floats like `float` or `np.float`, `flarray` for `arb`, `acb` only accepts integers, `arb` or `acb` and `flarray` for `arf` only accepts integers and `arf, arb`.
 
 To relax this, `allow_input()` may be used:
