@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from contextlib import contextmanager
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 import numpy as np
 from array_api.latest import Array, ArrayNamespaceFull
@@ -62,7 +62,7 @@ def _fltype(x: Any) -> Any:
     elif np.isdtype(el.dtype, "complex floating"):
         return acb
     else:
-        raise ValueError("Unrecognized type")
+        raise ValueError(f"Unrecognized type {el.dtype}.")
 
 
 class AttrDict[TV](dict[str, TV]):
@@ -130,13 +130,36 @@ def asarray(
     elif copy is False:
         raise ValueError("Cannot convert to the requested dtype without copying.")
     elif dtype is None:
-        dtype = _fltype(a)
-
+        try:
+            dtype = _fltype(a)
+        except ValueError as e:
+            raise TypeError(
+                "Could not infer dtype from input. Please specify dtype explicitly."
+            ) from e
     dtype_a = a.dtype
-    if dtype_a == np.object_:
+    if (
+        np.issubdtype(dtype_a, np.dtype(object))
+        or np.isdtype(dtype_a, np.str_)
+        or np.isdtype(dtype_a, np.bytes_)
+    ):
         if isinstance(el, arf) and dtype != arf:
             raise NonIntervalInputNotAllowedError()
-        a = np.vectorize(lambda z: dtype(z))(a)
+        if np.issubdtype(dtype_a, np.bytes_):
+
+            def f(z: Any) -> Any:
+                return dtype(bytes(z, encoding="utf-8").decode("utf-8"))
+
+        elif np.issubdtype(dtype_a, np.str_):
+
+            def f(z: Any) -> Any:
+                return dtype(str(z))
+
+        else:
+
+            def f(z: Any) -> Any:
+                return dtype(z)
+
+        a = np.vectorize(f)(a)
     elif np.isdtype(dtype_a, "integral") or np.isdtype(dtype_a, "bool"):
         a = np.vectorize(lambda z: dtype(int(z)))(a)
     elif np.isdtype(dtype_a, "real floating") or np.isdtype(dtype_a, "complex floating"):
@@ -650,6 +673,58 @@ linalg["tensordot"] = np.linalg.tensordot
 linalg["trace"] = np.linalg.trace
 linalg["vecdot"] = np.linalg.vecdot
 linalg["vector_norm"] = np.linalg.vector_norm
+
+# FFT Functions
+fft: AttrDict[Any] = AttrDict()
+namespace["fft"] = fft
+
+
+def _fft(
+    x: Array,
+    /,
+    *,
+    n: int | None = None,
+    axis: int = -1,
+    norm: Literal["backward", "ortho", "forward"] = "backward",
+) -> Array:
+    if n is not None and n > x.shape[axis]:
+        x = np.pad(x, [(0, 0)] * axis + [(0, n - x.shape[axis])] + [(0, 0)] * (x.ndim - axis - 1))
+    x = np.apply_along_axis(lambda x: acb.dft(x.tolist()), axis, x)
+    if n is not None and n < x.shape[axis]:
+        axis = axis % x.ndim
+        x = x[(slice(None),) * axis + (slice(0, n),) + (...,)]
+    # acb use backward normalization
+    if norm == "ortho":
+        x = x / arb(x.shape[axis]).sqrt()
+    elif norm == "forward":
+        x = x / x.shape[axis]
+    return x
+
+
+def _ifft(
+    x: Array,
+    /,
+    *,
+    n: int | None = None,
+    axis: int = -1,
+    norm: Literal["backward", "ortho", "forward"] = "backward",
+) -> Array:
+    if n is not None and n > x.shape[axis]:
+        x = np.pad(x, [(0, 0)] * axis + [(0, n - x.shape[axis])] + [(0, 0)] * (x.ndim - axis - 1))
+    x = np.apply_along_axis(lambda x: acb.dft(x.tolist(), inverse=True), axis, x)
+    if n is not None and n < x.shape[axis]:
+        axis = axis % x.ndim
+        x = x[(slice(None),) * axis + (slice(0, n),) + (...,)]
+    # acb use backward normalization
+    if norm == "ortho":
+        x = x * arb(x.shape[axis]).sqrt()
+    elif norm == "forward":
+        x = x * x.shape[axis]
+    return x
+
+
+fft["fft"] = _fft
+fft["ifft"] = _ifft
 
 # Random Functions
 # Simply call asarray after generating with numpy

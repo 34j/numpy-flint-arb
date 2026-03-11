@@ -48,7 +48,7 @@ repos:
     rev: v0.15.5
     hooks:
       - id: ruff-check
-        args: [--fix, --exit-non-zero-on-fix]
+        args: [--fix, --exit-non-zero-on-fix, --unsafe-fixes]
         types_or: [python, pyi, jupyter, markdown]
       - id: ruff-format
         types_or: [python, pyi, jupyter, markdown]

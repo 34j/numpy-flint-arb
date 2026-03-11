@@ -20,6 +20,19 @@ def test_linsolve():
     assert np.all(~(b_approx >= b))
 
 
+def test_fft():
+    fft_result = np.fft.fft(np.arange(1, stop=12))
+    ifft_result = np.fft.ifft(fft_result)
+    assert np.contains(ifft_result[-1], np.asarray("11.0", dtype=arb))
+    print(fft_result, ifft_result)
+
+
+def test_asarray_str():
+    x = np.asarray("1.0 +/- 0.1", dtype=arb)
+    assert np.contains(x, np.asarray("1.0 +/- 0.05", dtype=arb))
+    assert np.contains(x, np.asarray("1.0", dtype=arb))
+
+
 def test_comparisons():
     x = np.arange(3, dtype=np.float64)
     assert np.all(x == x)
