@@ -43,6 +43,7 @@ dev = [
   "pytest-cov>=7",
   "pytest-env>=1.2",
   "pytest-json-report>=1.5",
+  "sybil>=9.3",
 ]
 docs = [
   "furo; python_version>='3.12'",
@@ -53,6 +54,8 @@ docs = [
 
 [tool.ruff]
 line-length = 100
+format.preview = true
+format.docstring-code-format = true
 lint.select = [
   "B",   # flake8-bugbear
   "C4",  # flake8-comprehensions
@@ -86,6 +89,7 @@ lint.per-file-ignores."tests/**/*" = [
   "S101",
 ]
 lint.isort.known-first-party = [ "numpy_flint_arb", "tests" ]
+lint.preview = true
 
 [tool.pyproject-fmt]
 max_supported_python = "3.14"

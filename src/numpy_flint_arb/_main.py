@@ -280,30 +280,26 @@ namespace["is_dtype"] = is_dtype
 
 
 def finfo(type: Any, /) -> Any:
-    return AttrDict(
-        {
-            "bits": ctx.prec,
-            "eps": None,
-            "max": None,
-            "min": None,
-            "smallest_normal": None,
-            "dtype": arf,
-        }
-    )
+    return AttrDict({
+        "bits": ctx.prec,
+        "eps": None,
+        "max": None,
+        "min": None,
+        "smallest_normal": None,
+        "dtype": arf,
+    })
 
 
 namespace["finfo"] = finfo
 
 
 def iinfo(type: Any, /) -> Any:
-    return AttrDict(
-        {
-            "bits": None,
-            "max": None,
-            "min": None,
-            "dtype": fmpz,
-        }
-    )
+    return AttrDict({
+        "bits": None,
+        "max": None,
+        "min": None,
+        "dtype": fmpz,
+    })
 
 
 namespace["iinfo"] = iinfo
@@ -398,13 +394,11 @@ namespace["trunc"] = np.vectorize(lambda x: x.floor() if x >= 0 else x.ceil())
 
 def __array_namespace_info__() -> Any:
     info = np.__array_namespace_info__()
-    new_info: AttrDict[Any] = AttrDict(
-        {
-            "capabilities": info.capabilities,
-            "default_device": info.default_device,
-            "devices": info.devices,
-        }
-    )
+    new_info: AttrDict[Any] = AttrDict({
+        "capabilities": info.capabilities,
+        "default_device": info.default_device,
+        "devices": info.devices,
+    })
 
     def default_dtypes(*, device: Any = None) -> Any:
         return {
