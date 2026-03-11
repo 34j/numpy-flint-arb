@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.0 (2026-03-11)
+
+### Features
+
+- Better handling of str input ([`91e7c4e`](https://github.com/34j/numpy-flint-arb/commit/91e7c4ef1d35c8c70f824d9f7bcd7012a3870a7a))
+
 ## v1.3.0 (2026-03-11)
 
 ### Features
