@@ -53,12 +53,48 @@ pip install numpy-flint-arb
 Import `numpy_flint_arb.np` instead of `numpy`:
 
 ```python
+from numpy_flint_arb import np
+
 A = np.random.normal(size=(2, 2))
 b = np.random.normal(size=(2,))
 x = np.linalg.solve(A, b)
 b_approx = A @ x
 assert np.all(np.contains(b_approx, b))
 ```
+
+### Input Check
+
+To avoid mixing ordinary floats like `float` or `np.float`, `flarray` for `arb`, `acb` only accepts integers, `arb` or `acb` and `flarray` for `arf` only accepts integers and `arf, arb`.
+
+To relax this, `allow_input()` may be used:
+
+```python
+import pytest
+from numpy_flint_arb import allow_input
+from flint import arb, arf
+
+# arb array
+with pytest.raises(Exception):
+    np.asarray(0.5, dtype=arb)
+with pytest.raises(Exception):
+    with allow_input(float=True):
+        np.asarray(0.5, dtype=arb)
+with allow_input(interval=True, float=True):
+    np.asarray(0.5, dtype=arb)
+
+# arf array
+with pytest.raises(Exception):
+    np.asarray(0.5, dtype=arf)
+with allow_input(float=True):
+    np.asarray(0.5, dtype=arf)
+with allow_input(interval=True, float=True):
+    np.asarray(0.5, dtype=arf)
+```
+
+## Randomness
+
+Since `python-flint` does not support random number generation, the `random` module just uses `np.random`.
+Therefore, the return values may not be random up to the precision of `arb`, `acb`.
 
 ## What it does
 
