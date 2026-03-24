@@ -798,31 +798,31 @@ special["bi_zeros"] = _bi_zeros
 
 
 for name in ["jv", "jn"]:
-    special[name] = lambda v, x: np.vectorize(lambda x: x.bessel_j(v))(x)
+    special[name] = lambda v, x: np.vectorize(lambda x, v: x.bessel_j(v))(astype(x, acb), v)
 for name in ["yv", "yn"]:
-    special[name] = lambda v, x: np.vectorize(lambda x: x.bessel_y(v))(x)
+    special[name] = lambda v, x: np.vectorize(lambda x, v: x.bessel_y(v))(astype(x, acb), v)
 for name in ["iv"]:  # somewhat "in" is not in scipy.special
-    special[name] = lambda v, x: np.vectorize(lambda x: x.bessel_i(v))(x)
+    special[name] = lambda v, x: np.vectorize(lambda x, v: x.bessel_i(v))(astype(x, acb), v)
 for name in ["kv", "kn"]:
-    special[name] = lambda v, x: np.vectorize(lambda x: x.bessel_k(v))(x)
+    special[name] = lambda v, x: np.vectorize(lambda x, v: x.bessel_k(v))(astype(x, acb), v)
 special["hankel1"] = lambda v, x: np.vectorize(
-    lambda x: (
+    lambda x, v: (
         acb(2)
         / acb(1j)
         / acb.pi()
         * acb.exp(acb(-1j) * acb.pi() * v / 2)
         * acb.bessel_k(x * acb.exp(acb(-1j) * acb.pi() / 2), v)
     )
-)(x)
+)(x, v)
 special["hankel2"] = lambda v, x: np.vectorize(
-    lambda x: (
+    lambda x, v: (
         acb(-2)
         / acb(1j)
         / acb.pi()
         * acb.exp(acb(1j) * acb.pi() * v / 2)
         * acb.bessel_k(x * acb.exp(acb(1j) * acb.pi() / 2), v)
     )
-)(x)
+)(x, v)
 
 special["gamma"] = np.vectorize(lambda x: x.gamma())
 special["gammaln"] = np.vectorize(lambda x: x.lgamma())
