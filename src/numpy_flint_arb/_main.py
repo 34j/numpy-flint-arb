@@ -88,6 +88,8 @@ class ArrayNamespaceFullFlintArb[TArray: Array, TDtype, TDevice](
 
     Only a subset of functions are implemented,
     and they may not support all features of the original functions.
+
+    The computation procedure may be redundant.
     """
     vectorize: Callable[..., Callable[..., TArray]]
 
