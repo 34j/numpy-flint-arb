@@ -82,6 +82,15 @@ class AttrDict[TV](dict[str, TV]):
 class ArrayNamespaceFullFlintArb[TArray: Array, TDtype, TDevice](
     ArrayNamespaceFull[TArray, TDtype, TDevice], Protocol
 ):
+    special: Any
+    """
+    Special functions from scipy.special.
+
+    Only a subset of functions are implemented,
+    and they may not support all features of the original functions.
+    """
+    vectorize: Callable[..., Callable[..., TArray]]
+
     def contains(self, x: TArray, y: TArray) -> TArray:
         """Returns nonzero iff y is contained in x."""
         ...
