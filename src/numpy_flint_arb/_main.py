@@ -50,7 +50,9 @@ class NonIntervalInputNotAllowedError(NotAllowedError):
 
 
 def _fltype(x: Any) -> Any:
-    el = np.asarray(x).ravel()[0]
+    if x.size == 0:
+        raise ValueError("Cannot infer dtype from empty array.")
+    el = np.asarray(x).flat[0]
 
     for t in dtypes:
         if isinstance(el, t):
@@ -124,7 +126,17 @@ class flarray(np.ndarray):
     def __array_finalize__(self, obj: Any) -> None:
         if obj is None:
             return
-        self._fl_dtype = getattr(obj, "_fl_dtype", None)
+        self._fl_dtype = type(self.flat[0]) if self.size > 0 else getattr(obj, "_fl_dtype", None)
+
+    # def __array_ufunc__(self, ufunc: np.ufunc, method: Literal['__call__'] |
+    #  Literal['reduce'] | Literal['
+    # reduceat'] | Literal['accumulate'] | Literal['outer'] | Literal['at'],
+    #  *inputs: Any, **kwargs: Any) -> Any:
+    #     result = getattr(ufunc, method)(*inputs, **kwargs)
+    #     if result is NotImplemented:
+    #         return NotImplemented
+    #     result._fl_dtype = type(result.flat[0])
+    #     return result
 
     def __array_namespace__(self, /, *, api_version: Any = None) -> Any:
         return namespace
@@ -143,7 +155,7 @@ def asarray(
     if dtype is not None and dtype not in dtypes:
         raise TypeError(f"dtype must be one of {', '.join([str(t) for t in dtypes])}, got {dtype}.")
     a = np.asarray(obj)
-    el = a.ravel()[0]
+    el = a.flat[0] if a.size > 0 else None
     if dtype is not None and isinstance(el, dtype) and (copy is False or copy is None):
         return a
     elif copy is False:
@@ -155,8 +167,11 @@ def asarray(
             raise TypeError(
                 "Could not infer dtype from input. Please specify dtype explicitly."
             ) from e
+    # If a.size == 0, dtype_a will be float64 by default
     dtype_a = a.dtype
-    if (
+    if a.size == 0:
+        pass
+    elif (
         np.issubdtype(dtype_a, np.dtype(object))
         or np.isdtype(dtype_a, np.str_)
         or np.isdtype(dtype_a, np.bytes_)
@@ -647,7 +662,7 @@ def vectorize_mat(f_mat: Callable[..., Any], /, *, n_args: int = 1) -> Callable[
         for i in range(n_args):
             args_[i] = tomat(args_[i])
         res = np.vectorize(lambda x: f_mat(x, *args_[n_args:], **kwargs))(*args_[:n_args])
-        if isinstance(res.ravel()[0], (acb_mat, arb_mat, fmpz_mat, fmpq_mat)):
+        if isinstance(res.flat[0], (acb_mat, arb_mat, fmpz_mat, fmpq_mat)):
             res = frommat(res)
         return res
 
@@ -810,6 +825,8 @@ special["hankel1"] = lambda v, x: np.vectorize(
         acb(2)
         / acb(1j)
         / acb.pi()
+        * acb.exp(acb(-1j) * acb.pi() * v / 2)
+        * acb.bessel_k(x * acb.exp(acb(-1j) * acb.pi() / 2), v)
         * acb.exp(acb(-1j) * acb.pi() * v / 2)
         * acb.bessel_k(x * acb.exp(acb(-1j) * acb.pi() / 2), v)
     )

@@ -123,11 +123,11 @@ with pytest.raises(Exception):
 >>> # This is possible but not recommended
 >>> np.asarray("0.5 +/- 0.001", dtype=arb) + 1j * np.asarray("0.5 +/- 0.001", dtype=acb)
 flarray([0.50 +/- 1.01e-3] + [0.50 +/- 1.01e-3]j,
-        dtype=<class 'flint.types.arb.arb'>)
+        dtype=<class 'flint.types.acb.acb'>)
 >>> # Recommended
 >>> np.asarray("0.5 +/- 0.001", dtype=arb) + acb(1j) * np.asarray("0.5 +/- 0.001", dtype=arb)
 flarray([0.50 +/- 1.01e-3] + [0.50 +/- 1.01e-3]j,
-        dtype=<class 'flint.types.arb.arb'>)
+        dtype=<class 'flint.types.acb.acb'>)
 ```
 
 ## `fft` submodule
@@ -186,6 +186,14 @@ flarray([[0.765197686557966 +/- 6.11e-16],
   - Defining custom `dtype` is way too complicated
   - Writing C extension would be theoretically also possible but is still too complicated.
 - Does not support `in` operator since it tries to convert the return value to bool. Use newly added `np.contains(x, y)` and `np.overlaps(x, y)` instead.
+- Currently `dtype` of resulting `flarray` is inferred from `type(output.flat[0])`. If the output array is empty or its element type is inconsistent, the result will be inaccurate.
+
+  ```python
+  >>> (np.asarray([0], dtype=arb) * acb(1j)).dtype
+  <class 'flint.types.acb.acb'>
+  >>> (np.asarray([], dtype=arb) * acb(1j)).dtype
+  <class 'flint.types.arb.arb'>
+  ```
 
 ## Contributors ✨
 

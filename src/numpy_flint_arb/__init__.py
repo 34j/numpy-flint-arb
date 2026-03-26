@@ -1,4 +1,4 @@
-__version__ = "1.4.0"
+__version__ = "1.4.1"
 from ._main import allow_input
 from ._main import namespace as np
 
