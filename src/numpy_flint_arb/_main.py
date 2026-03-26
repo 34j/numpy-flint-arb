@@ -601,7 +601,7 @@ def tomat(a: Any, /) -> Any:
     elif dtype == fmpz:
         mattype = fmpz_mat
     else:
-        raise TypeError("Unsupported dtype for matrix conversion.")
+        raise TypeError(f"Unsupported dtype {dtype} for matrix conversion.")
     ashape = a.shape
     a = np.reshape(a, (-1, a.shape[-2], a.shape[-1]))
     a = np.asarray([mattype(el.tolist()) for el in a])
@@ -627,8 +627,18 @@ def frommat(a: Any, /) -> Any:
         The output array of shape (..., m, n).
 
     """
+    mattype = a.dtype
+    if mattype == acb_mat:
+        dtype = acb
+    elif mattype == arb_mat:
+        dtype = arb
+    elif mattype == fmpq_mat:
+        dtype = fmpq
+    elif mattype == fmpz_mat:
+        dtype = fmpz
+    else:
+        raise TypeError(f"Unsupported matrix type {mattype} for matrix conversion.")
     ashape = a.shape
-    dtype = a.dtype
     a = np.reshape(a, (-1,))
     a = np.asarray([el.table() for el in a])
     a = np.reshape(a, ashape + a.shape[1:])

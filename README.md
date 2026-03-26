@@ -137,9 +137,9 @@ Some `fft` functions are implemented.
 ```python
 >>> np.fft.fft(np.arange(1, stop=4))
 flarray([6.00000000000000,
-          -1.50000000000000 + [0.86602540378444 +/- 1.96e-15]j,
-          -1.50000000000000 + [-0.86602540378444 +/- 1.96e-15]j],
-        dtype=<class 'flint.types.fmpz.fmpz'>)
+         -1.50000000000000 + [0.86602540378444 +/- 1.96e-15]j,
+         -1.50000000000000 + [-0.86602540378444 +/- 1.96e-15]j],
+        dtype=<class 'flint.types.acb.acb'>)
 ```
 
 ## `linalg` submodule
@@ -149,10 +149,11 @@ Some `linalg` functions are implemented.
 ```python
 >>> A = np.asarray([[1, 2], [3, 4]], dtype=arb)
 >>> np.linalg.inv(A)
-flarray([6.00000000000000,
-          -1.50000000000000 + [0.86602540378444 +/- 1.96e-15]j,
-          -1.50000000000000 + [-0.86602540378444 +/- 1.96e-15]j],
-        dtype=<class 'flint.types.fmpz.fmpz'>)
+flarray([[[-2.00000000000000 +/- 1.63e-15],
+          [1.00000000000000 +/- 7.41e-16]],
+         [[1.50000000000000 +/- 9.44e-16],
+          [-0.500000000000000 +/- 4.17e-16]]],
+        dtype=<class 'flint.types.arb.arb'>)
 ```
 
 Internally 2 functions `tomat()` and `frommat()` are added to treat `flarray` as array of `arb_mat` / `acb_mat`, so that we can perform matrix operations like `np.linalg.solve` on `flarray`.
