@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.0 (2026-03-26)
+
+### Features
+
+- Add more scipy functions ([`912f354`](https://github.com/34j/numpy-flint-arb/commit/912f354266cdf8ce1484094e8fef8ae7b30a66c6))
+
 ## v1.4.1 (2026-03-26)
 
 ### Bug fixes
