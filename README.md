@@ -64,8 +64,6 @@ assert np.all(np.contains(b_approx, b))
 
 ### `asarray()` and Input Check
 
-### `asarray()` and Input Check
-
 To avoid mixing ordinary floats like `float` or `np.float`, `flarray` for `arb`, `acb` only accepts integers, `arb` or `acb` and `flarray` for `arf` only accepts integers and `arf, arb`.
 
 To relax this, `allow_input()` may be used:
@@ -125,11 +123,11 @@ with pytest.raises(Exception):
 >>> # This is possible but not recommended
 >>> np.asarray("0.5 +/- 0.001", dtype=arb) + 1j * np.asarray("0.5 +/- 0.001", dtype=acb)
 flarray([0.50 +/- 1.01e-3] + [0.50 +/- 1.01e-3]j,
-        dtype=<class 'flint.types.arb.arb'>)
+        dtype=<class 'flint.types.acb.acb'>)
 >>> # Recommended
 >>> np.asarray("0.5 +/- 0.001", dtype=arb) + acb(1j) * np.asarray("0.5 +/- 0.001", dtype=arb)
 flarray([0.50 +/- 1.01e-3] + [0.50 +/- 1.01e-3]j,
-        dtype=<class 'flint.types.arb.arb'>)
+        dtype=<class 'flint.types.acb.acb'>)
 ```
 
 ## Randomness
@@ -150,6 +148,14 @@ Therefore, the return values may not be random up to the precision of `arb`, `ac
   - Defining custom `dtype` is way too complicated
   - Writing C extension would be theoretically also possible but is still too complicated.
 - Does not support `in` operator since it tries to convert the return value to bool. Use newly added `np.contains(x, y)` and `np.overlaps(x, y)` instead.
+- Currently `dtype` of resulting `flarray` is inferred from `type(output.flat[0])`. If the output array is empty or its element type is inconsistent, the result will be inaccurate.
+
+  ```python
+  >>> (np.asarray([0], dtype=arb) * acb(1j)).dtype
+  <class 'flint.types.acb.acb'>
+  >>> (np.asarray([], dtype=arb) * acb(1j)).dtype
+  <class 'flint.types.arb.arb'>
+  ```
 
 ## Contributors ✨
 
