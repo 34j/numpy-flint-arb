@@ -84,6 +84,17 @@ class AttrDict[TV](dict[str, TV]):
 class ArrayNamespaceFullFlintArb[TArray: Array, TDtype, TDevice](
     ArrayNamespaceFull[TArray, TDtype, TDevice], Protocol
 ):
+    special: Any
+    """
+    Special functions from scipy.special.
+
+    Only a subset of functions are implemented,
+    and they may not support all features of the original functions.
+
+    The computation procedure may be redundant.
+    """
+    vectorize: Callable[..., Callable[..., TArray]]
+
     def contains(self, x: TArray, y: TArray) -> TArray:
         """Returns nonzero iff y is contained in x."""
         ...
@@ -590,7 +601,7 @@ def tomat(a: Any, /) -> Any:
     elif dtype == fmpz:
         mattype = fmpz_mat
     else:
-        raise TypeError("Unsupported dtype for matrix conversion.")
+        raise TypeError(f"Unsupported dtype {dtype} for matrix conversion.")
     ashape = a.shape
     a = np.reshape(a, (-1, a.shape[-2], a.shape[-1]))
     a = np.asarray([mattype(el.tolist()) for el in a])
@@ -616,8 +627,18 @@ def frommat(a: Any, /) -> Any:
         The output array of shape (..., m, n).
 
     """
+    mattype = a.dtype
+    if mattype == acb_mat:
+        dtype = acb
+    elif mattype == arb_mat:
+        dtype = arb
+    elif mattype == fmpq_mat:
+        dtype = fmpq
+    elif mattype == fmpz_mat:
+        dtype = fmpz
+    else:
+        raise TypeError(f"Unsupported matrix type {mattype} for matrix conversion.")
     ashape = a.shape
-    dtype = a.dtype
     a = np.reshape(a, (-1,))
     a = np.asarray([el.table() for el in a])
     a = np.reshape(a, ashape + a.shape[1:])
@@ -773,50 +794,127 @@ special: AttrDict[Any] = AttrDict()
 namespace["special"] = special
 
 special["airy"] = np.vectorize(lambda x: x.airy())
+special["agm"] = np.vectorize(lambda x, y: x.agm(y))
+special["barnesg"] = np.vectorize(lambda x: x.barnes_g())
+
+
+def _ai_zeros(nt: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    z = np.asarray([acb.airy_ai_zero(i + 1) for i in range(nt)], dtype=object)
+    return (
+        z,
+        np.vectorize(lambda x: x.airy_ai(derivative=1))(z),
+        np.vectorize(lambda x: x.airy_ai())(z),
+        np.vectorize(lambda x: x.airy_ai(derivative=1))(z),
+    )
+
+
+def _bi_zeros(nt: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    z = np.asarray([acb.airy_bi_zero(i + 1) for i in range(nt)], dtype=object)
+    return (
+        z,
+        np.vectorize(lambda x: x.airy_bi(derivative=1))(z),
+        np.vectorize(lambda x: x.airy_bi())(z),
+        np.vectorize(lambda x: x.airy_bi(derivative=1))(z),
+    )
+
+
+special["ai_zeros"] = _ai_zeros
+special["bi_zeros"] = _bi_zeros
+
+
 for name in ["jv", "jn"]:
-    special[name] = lambda v, x: np.vectorize(lambda x: x.bessel_j(v))(x)
+    special[name] = lambda v, x: np.vectorize(lambda x, v: x.bessel_j(v))(astype(x, acb), v)
 for name in ["yv", "yn"]:
-    special[name] = lambda v, x: np.vectorize(lambda x: x.bessel_y(v))(x)
+    special[name] = lambda v, x: np.vectorize(lambda x, v: x.bessel_y(v))(astype(x, acb), v)
 for name in ["iv"]:  # somewhat "in" is not in scipy.special
-    special[name] = lambda v, x: np.vectorize(lambda x: x.bessel_i(v))(x)
+    special[name] = lambda v, x: np.vectorize(lambda x, v: x.bessel_i(v))(astype(x, acb), v)
 for name in ["kv", "kn"]:
-    special[name] = lambda v, x: np.vectorize(lambda x: x.bessel_k(v))(x)
-special["hankel1"] = np.vectorize(
-    lambda v, x: (
+    special[name] = lambda v, x: np.vectorize(lambda x, v: x.bessel_k(v))(astype(x, acb), v)
+special["hankel1"] = lambda v, x: np.vectorize(
+    lambda x, v: (
         acb(2)
         / acb(1j)
         / acb.pi()
         * acb.exp(acb(-1j) * acb.pi() * v / 2)
         * acb.bessel_k(x * acb.exp(acb(-1j) * acb.pi() / 2), v)
+        * acb.exp(acb(-1j) * acb.pi() * v / 2)
+        * acb.bessel_k(x * acb.exp(acb(-1j) * acb.pi() / 2), v)
     )
-)
+)(astype(x, acb), v)
 special["hankel2"] = lambda v, x: np.vectorize(
-    lambda x: (
+    lambda x, v: (
         acb(-2)
         / acb(1j)
         / acb.pi()
-        * acb.exp(1j * acb.pi() * v / 2)
-        * acb.bessel_k(x * acb.exp(1j * acb.pi() / 2), v)
+        * acb.exp(acb(1j) * acb.pi() * v / 2)
+        * acb.bessel_k(x * acb.exp(acb(1j) * acb.pi() / 2), v)
     )
-)(x)
+)(astype(x, acb), v)
 
 special["gamma"] = np.vectorize(lambda x: x.gamma())
 special["gammaln"] = np.vectorize(lambda x: x.lgamma())
 special["loggamma"] = np.vectorize(lambda x: x.lgamma())
 special["beta"] = np.vectorize(lambda x, y: x.beta(y))
+special["betainc"] = np.vectorize(lambda a, b, x: x.beta_lower(a, b, regularized=True))
+special["betaincc"] = np.vectorize(lambda a, b, x: acb(1) - x.beta_lower(a, b, regularized=True))
 special["rgamma"] = np.vectorize(lambda x: x.rgamma())
 special["digamma"] = np.vectorize(lambda x: x.digamma())
+special["psi"] = special["digamma"]
+special["gammainc"] = np.vectorize(lambda a, x: x.gamma_lower(a, regularized=1))
+special["gammaincc"] = np.vectorize(lambda a, x: x.gamma_upper(a, regularized=True))
+special["poch"] = np.vectorize(lambda z, m: z.rising(m))
 
 special["erf"] = np.vectorize(lambda x: x.erf())
 special["erfc"] = np.vectorize(lambda x: x.erfc())
 special["erfi"] = np.vectorize(lambda x: x.erfi())
+special["erfinv"] = np.vectorize(lambda x: x.erfinv())
+special["erfcinv"] = np.vectorize(lambda x: x.erfcinv())
 special["fresnel"] = lambda x: (
     np.vectorize(lambda x: x.fresnel_s())(x),
     np.vectorize(lambda x: x.fresnel_c())(x),
 )
+special["sici"] = lambda x: (
+    np.vectorize(lambda z: z.si())(x),
+    np.vectorize(lambda z: z.ci())(x),
+)
+special["shichi"] = lambda x: (
+    np.vectorize(lambda z: z.shi())(x),
+    np.vectorize(lambda z: z.chi())(x),
+)
+special["expi"] = np.vectorize(lambda x: x.ei())
+special["exp1"] = np.vectorize(lambda x: x.expint(1))
+special["expn"] = np.vectorize(lambda n, x: x.expint(n))
+
+special["ellipk"] = np.vectorize(lambda m: m.elliptic_k())
+special["ellipe"] = np.vectorize(lambda m: m.elliptic_e())
+special["ellipkinc"] = np.vectorize(lambda phi, m: acb.elliptic_f(phi, m))
+special["ellipeinc"] = np.vectorize(lambda phi, m: acb.elliptic_e_inc(phi, m))
+special["elliprc"] = np.vectorize(lambda x, y: acb.elliptic_rc(x, y))
+special["elliprd"] = np.vectorize(lambda x, y, z: acb.elliptic_rd(x, y, z))
+special["elliprf"] = np.vectorize(lambda x, y, z: acb.elliptic_rf(x, y, z))
+special["elliprg"] = np.vectorize(lambda x, y, z: acb.elliptic_rg(x, y, z))
+special["elliprj"] = np.vectorize(lambda x, y, z, p: acb.elliptic_rj(x, y, z, p))
 
 special["legendre_p"] = lambda n, x: np.vectorize(lambda x: x.legendre_p(n))(x)
 special["lqn"] = lambda n, x: np.vectorize(lambda x: x.legendre_q(n))(x)
+special["eval_chebyt"] = lambda n, x: np.vectorize(lambda z: z.chebyshev_t(n))(x)
+special["eval_chebyu"] = lambda n, x: np.vectorize(lambda z: z.chebyshev_u(n))(x)
+special["eval_jacobi"] = lambda n, alpha, beta, x: np.vectorize(
+    lambda z: z.jacobi_p(n, alpha, beta)
+)(x)
+special["eval_laguerre"] = lambda n, x: np.vectorize(lambda z: z.laguerre_l(n))(x)
+special["eval_hermite"] = lambda n, x: np.vectorize(lambda z: z.hermite_h(n))(x)
+special["eval_gegenbauer"] = lambda n, alpha, x: np.vectorize(lambda z: z.gegenbauer_c(n, alpha))(x)
+
+special["hyp0f1"] = lambda a, z: np.vectorize(lambda x: x.hypgeom_0f1(a))(z)
+special["hyp1f1"] = lambda a, b, x: np.vectorize(lambda z: z.hypgeom_1f1(a, b))(x)
+special["hyp2f1"] = lambda a, b, c, z: np.vectorize(lambda x: x.hypgeom_2f1(a, b, c))(z)
+special["hyperu"] = lambda a, b, x: np.vectorize(lambda z: z.hypgeom_u(a, b))(x)
+
+special["lambertw"] = lambda z, k=0, tol=None: np.vectorize(lambda x: x.lambertw(k))(z)
+special["zeta"] = np.vectorize(lambda x, q=None: x.zeta(q) if q is not None else x.zeta())
+special["zetac"] = np.vectorize(lambda x: x.zeta() - acb(1))
+
 
 namespace["vectorize"] = lambda *args, **kwargs: (
     lambda *args_, **kwargs_: asarray(np.vectorize(*args, **kwargs)(*args_, **kwargs_))

@@ -130,10 +130,49 @@ flarray([0.50 +/- 1.01e-3] + [0.50 +/- 1.01e-3]j,
         dtype=<class 'flint.types.acb.acb'>)
 ```
 
-## Randomness
+## `fft` submodule
+
+Some `fft` functions are implemented.
+
+```python
+>>> np.fft.fft(np.arange(1, stop=4))
+flarray([6.00000000000000,
+         -1.50000000000000 + [0.86602540378444 +/- 1.96e-15]j,
+         -1.50000000000000 + [-0.86602540378444 +/- 1.96e-15]j],
+        dtype=<class 'flint.types.acb.acb'>)
+```
+
+## `linalg` submodule
+
+Some `linalg` functions are implemented.
+
+```python
+>>> A = np.asarray([[1, 2], [3, 4]], dtype=arb)
+>>> np.linalg.inv(A)
+flarray([[[-2.00000000000000 +/- 1.63e-15],
+          [1.00000000000000 +/- 7.41e-16]],
+         [[1.50000000000000 +/- 9.44e-16],
+          [-0.500000000000000 +/- 4.17e-16]]],
+        dtype=<class 'flint.types.arb.arb'>)
+```
+
+Internally 2 functions `tomat()` and `frommat()` are added to treat `flarray` as array of `arb_mat` / `acb_mat`, so that we can perform matrix operations like `np.linalg.solve` on `flarray`.
+
+## `random` submodule
 
 Since `python-flint` does not support random number generation, the `random` module just uses `np.random`.
 Therefore, the return values may not be random up to the precision of `arb`, `acb`.
+
+## `special` submodule
+
+Some `scipy.special` functions are implemented.
+
+```python
+>>> np.special.jv(np.arange(2), arb(1))
+flarray([[0.765197686557966 +/- 6.11e-16],
+         [0.440050585744933 +/- 5.55e-16]],
+        dtype=<class 'flint.types.acb.acb'>)
+```
 
 ## What it does
 
@@ -142,7 +181,7 @@ Therefore, the return values may not be random up to the precision of `arb`, `ac
   - Override `dtype` to return newly added `_fl_dtype` private attribute, since the actual internal dtype `object` cannot be overridden.
   - Override `__array_finalize__` as recommended by the NumPy docs to return `flarray` with proper `_fl_dtype` instead of `ndarray` after Numpy operations.
 - Partially supports `linalg` and `(scipy.)special` functions.
-- Adds `tomat()` and `frommat()` to treat `flarray` as array of `arb_mat` / `acb_mat`, so that we can perform matrix operations like `np.linalg.solve` on `flarray`.
+-
 - Does not perform any parallelization to avoid complexity and to fully utilize the great `python-flint` library
   - Using `arb_series` and `acb_series` may be faster for additions but this is too hacky.
   - Defining custom `dtype` is way too complicated
