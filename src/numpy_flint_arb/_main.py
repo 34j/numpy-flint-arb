@@ -840,7 +840,7 @@ special["hankel1"] = lambda v, x: np.vectorize(
         * acb.exp(acb(-1j) * acb.pi() * v / 2)
         * acb.bessel_k(x * acb.exp(acb(-1j) * acb.pi() / 2), v)
     )
-)(x, v)
+)(astype(x, acb), v)
 special["hankel2"] = lambda v, x: np.vectorize(
     lambda x, v: (
         acb(-2)
@@ -849,7 +849,7 @@ special["hankel2"] = lambda v, x: np.vectorize(
         * acb.exp(acb(1j) * acb.pi() * v / 2)
         * acb.bessel_k(x * acb.exp(acb(1j) * acb.pi() / 2), v)
     )
-)(x, v)
+)(astype(x, acb), v)
 
 special["gamma"] = np.vectorize(lambda x: x.gamma())
 special["gammaln"] = np.vectorize(lambda x: x.lgamma())
