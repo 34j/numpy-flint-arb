@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.4.1 (2026-03-26)
+
+### Bug fixes
+
+- Fix dtype ([`dafdc3a`](https://github.com/34j/numpy-flint-arb/commit/dafdc3a5afab3e647347bad43aa8865fd10a62d9))
+- Fix dtype ([`dafdc3a`](https://github.com/34j/numpy-flint-arb/commit/dafdc3a5afab3e647347bad43aa8865fd10a62d9))
+
 ## v1.4.0 (2026-03-11)
 
 ### Features

@@ -563,7 +563,7 @@ wheels = [
 
 [[package]]
 name = "numpy-flint-arb"
-version = "1.4.0"
+version = "1.4.1"
 source = { editable = "." }
 dependencies = [
     { name = "cm-time" },
@@ -607,7 +607,6 @@ dev = [
     { name = "pytest-cov", specifier = ">=7" },
     { name = "pytest-env", specifier = ">=1.2" },
     { name = "pytest-json-report", specifier = ">=1.5" },
-    { name = "sybil", specifier = ">=9.3" },
     { name = "sybil", specifier = ">=9.3" },
 ]
 docs = [
