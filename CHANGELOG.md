@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.1 (2026-06-14)
+
+### Bug fixes
+
+- Specify dtype in creation functions ([`5ec6e28`](https://github.com/34j/numpy-flint-arb/commit/5ec6e28e662418df5aa9cb78a3e31c9129a403d0))
+
 ## v1.5.0 (2026-03-26)
 
 ### Features
