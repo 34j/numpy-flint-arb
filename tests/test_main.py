@@ -20,6 +20,19 @@ def test_linsolve():
     assert np.all(~(b_approx >= b))
 
 
+def test_slice():
+    x = np.zeros((4, 1, 1))
+    assert x[1, ...].shape == (1, 1)
+
+
+def test_creation():
+    shape = (2, 2)
+    x = np.zeros(shape)
+    x = np.zeros_like(x)
+    x = np.ones(shape)
+    x = np.ones_like(x)
+
+
 def test_fft():
     fft_result = np.fft.fft(np.arange(1, stop=12))
     ifft_result = np.fft.ifft(fft_result)

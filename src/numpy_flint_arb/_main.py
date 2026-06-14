@@ -249,6 +249,7 @@ for name in [
 
     def _(*args: Any, _name: str = name, **kwargs: Any) -> Any:
         dtype = kwargs.pop("dtype", None)
+        kwargs["dtype"] = np.int64
         a = getattr(np, _name)(*args, **kwargs)
         a = asarray(a, dtype=dtype)
         return a
