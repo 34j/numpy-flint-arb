@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.2 (2026-06-26)
+
+### Bug fixes
+
+- Remove nextafter, signbit, use `acb(1j)` in `hypot`, fix `linspace()` and `result_type()` type checking ([`a316786`](https://github.com/34j/numpy-flint-arb/commit/a316786a09f98ddec5da510c320276d6663dc7de))
+
 ## v1.5.1 (2026-06-14)
 
 ### Bug fixes
