@@ -6,7 +6,7 @@ import numpy as np
 from array_api.latest import Array, ArrayNamespaceFull
 from flint import acb, acb_mat, arb, arb_mat, arf, ctx, fmpq, fmpq_mat, fmpz, fmpz_mat
 
-dtypes = [acb, arb, arf, fmpz, fmpq]
+dtypes = (acb, arb, arf, fmpz, fmpq)
 
 _ALLOW_FLOAT_INPUT = False
 _ALLOW_NONINTERVAL_INPUT = False
@@ -260,13 +260,20 @@ for name in [
 def linspace(
     start: Any, stop: Any, /, num: int = 50, dtype: Any = None, device: Any = None
 ) -> np.ndarray:
-    if start not in dtypes:
+    if not isinstance(start, dtypes):
         raise TypeError("start must be a flint type.")
-    if stop not in dtypes:
+    if not isinstance(stop, dtypes):
         raise TypeError("stop must be a flint type.")
+    if num < 0:
+        raise ValueError("num must be a non-negative integer.")
     dtype = result_type(start, stop, dtype)
-    diff = (stop - start) / (num - 1) if num > 1 else 0
-    diff = dtype(diff)
+    start = dtype(start)
+    stop = dtype(stop)
+    if num <= 1:
+        diff = dtype(0)
+    else:
+        diff = (stop - start) / (num - 1)
+        diff = dtype(diff)
     return start + diff * namespace["arange"](num, dtype=dtype)
 
 
@@ -366,7 +373,11 @@ namespace["iinfo"] = iinfo
 def result_type(*arrays_and_dtypes: Any) -> Any:
     types = []
     for x in arrays_and_dtypes:
-        if x in dtypes or np.issubdtype(x, np.number):
+        if x in dtypes:
+            types.append(x)
+        elif isinstance(x, dtypes):
+            types.append(type(x))
+        elif np.issubdtype(x, np.number):
             types.append(x)
         else:
             types.append(_fltype(x))
