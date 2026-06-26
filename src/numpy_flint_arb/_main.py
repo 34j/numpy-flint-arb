@@ -6,7 +6,7 @@ import numpy as np
 from array_api.latest import Array, ArrayNamespaceFull
 from flint import acb, acb_mat, arb, arb_mat, arf, ctx, fmpq, fmpq_mat, fmpz, fmpz_mat
 
-dtypes = [acb, arb, arf, fmpz, fmpq]
+dtypes = (acb, arb, arf, fmpz, fmpq)
 
 _ALLOW_FLOAT_INPUT = False
 _ALLOW_NONINTERVAL_INPUT = False
@@ -260,13 +260,20 @@ for name in [
 def linspace(
     start: Any, stop: Any, /, num: int = 50, dtype: Any = None, device: Any = None
 ) -> np.ndarray:
-    if start not in dtypes:
+    if not isinstance(start, dtypes):
         raise TypeError("start must be a flint type.")
-    if stop not in dtypes:
+    if not isinstance(stop, dtypes):
         raise TypeError("stop must be a flint type.")
+    if num < 0:
+        raise ValueError("num must be a non-negative integer.")
     dtype = result_type(start, stop, dtype)
-    diff = (stop - start) / (num - 1) if num > 1 else 0
-    diff = dtype(diff)
+    start = dtype(start)
+    stop = dtype(stop)
+    if num <= 1:
+        diff = dtype(0)
+    else:
+        diff = (stop - start) / (num - 1)
+        diff = dtype(diff)
     return start + diff * namespace["arange"](num, dtype=dtype)
 
 
@@ -366,7 +373,11 @@ namespace["iinfo"] = iinfo
 def result_type(*arrays_and_dtypes: Any) -> Any:
     types = []
     for x in arrays_and_dtypes:
-        if x in dtypes or np.issubdtype(x, np.number):
+        if x in dtypes:
+            types.append(x)
+        elif isinstance(x, dtypes):
+            types.append(type(x))
+        elif np.issubdtype(x, np.number):
             types.append(x)
         else:
             types.append(_fltype(x))
@@ -410,7 +421,7 @@ namespace["floor"] = np.vectorize(lambda x: x.floor())
 namespace["floor_divide"] = np.floor_divide
 namespace["greater"] = np.greater
 namespace["greater_equal"] = np.greater_equal
-namespace["hypot"] = np.vectorize(lambda x1, x2: abs(x1 + x2 * 1j))
+namespace["hypot"] = np.vectorize(lambda x1, x2: abs(x1 + x2 * acb(1j)))
 namespace["imag"] = np.vectorize(lambda x: x.imag if hasattr(x, "imag") else acb.imag(x))
 namespace["isfinite"] = np.vectorize(
     lambda x: x.is_finite() if hasattr(x, "is_finite") else np.isfinite(x)
@@ -430,7 +441,7 @@ namespace["minimum"] = np.vectorize(lambda x1, x2: x1.min(x2))
 namespace["multiply"] = np.multiply
 namespace["negative"] = np.negative
 # no nextafter
-namespace["nextafter"] = np.vectorize(lambda x1, x2: x1)
+# namespace["nextafter"] = np.vectorize(lambda x1, x2: x1)
 namespace["not_equal"] = np.not_equal
 namespace["positive"] = np.positive
 namespace["pow"] = np.pow
@@ -439,7 +450,8 @@ namespace["reciprocal"] = np.reciprocal
 namespace["remainder"] = np.remainder
 # namespace["round"] = None
 namespace["sign"] = np.vectorize(lambda x: x.sgn())
-namespace["signbit"] = np.vectorize(lambda x: x.sgn())
+# no signbit
+# namespace["signbit"] = np.vectorize(lambda x: x.sgn())
 namespace["sin"] = np.vectorize(lambda x: x.sin())
 namespace["sinh"] = np.vectorize(lambda x: x.sinh())
 namespace["square"] = np.vectorize(lambda x: x**2)
