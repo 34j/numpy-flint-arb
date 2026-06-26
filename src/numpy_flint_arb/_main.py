@@ -373,7 +373,7 @@ namespace["iinfo"] = iinfo
 def result_type(*arrays_and_dtypes: Any) -> Any:
     types = []
     for x in arrays_and_dtypes:
-        if x in dtypes:
+        if isinstance(x, type) and x in dtypes:
             types.append(x)
         elif isinstance(x, dtypes):
             types.append(type(x))

@@ -25,6 +25,11 @@ def test_slice():
     assert x[1, ...].shape == (1, 1)
 
 
+def test_linspace():
+    x = np.linspace(arb(1), acb(1j), 5)
+    assert np.contains(x[2], (arb(1) + acb(1j)) / 2)
+
+
 def test_creation():
     shape = (2, 2)
     x = np.zeros(shape)
