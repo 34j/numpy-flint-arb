@@ -410,7 +410,7 @@ namespace["floor"] = np.vectorize(lambda x: x.floor())
 namespace["floor_divide"] = np.floor_divide
 namespace["greater"] = np.greater
 namespace["greater_equal"] = np.greater_equal
-namespace["hypot"] = np.vectorize(lambda x1, x2: abs(x1 + x2 * 1j))
+namespace["hypot"] = np.vectorize(lambda x1, x2: abs(x1 + x2 * acb(1j)))
 namespace["imag"] = np.vectorize(lambda x: x.imag if hasattr(x, "imag") else acb.imag(x))
 namespace["isfinite"] = np.vectorize(
     lambda x: x.is_finite() if hasattr(x, "is_finite") else np.isfinite(x)
