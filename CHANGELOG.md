@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.3 (2026-06-26)
+
+### Bug fixes
+
+- Fix linspace ([`b5aebbd`](https://github.com/34j/numpy-flint-arb/commit/b5aebbd7e0fe9fd4b953e53ecf7bd168caa6dc33))
+
 ## v1.5.2 (2026-06-26)
 
 ### Bug fixes
