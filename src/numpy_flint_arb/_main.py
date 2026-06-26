@@ -439,7 +439,8 @@ namespace["reciprocal"] = np.reciprocal
 namespace["remainder"] = np.remainder
 # namespace["round"] = None
 namespace["sign"] = np.vectorize(lambda x: x.sgn())
-namespace["signbit"] = np.vectorize(lambda x: x.sgn())
+# no signbit
+# namespace["signbit"] = np.vectorize(lambda x: x.sgn())
 namespace["sin"] = np.vectorize(lambda x: x.sin())
 namespace["sinh"] = np.vectorize(lambda x: x.sinh())
 namespace["square"] = np.vectorize(lambda x: x**2)
