@@ -430,7 +430,7 @@ namespace["minimum"] = np.vectorize(lambda x1, x2: x1.min(x2))
 namespace["multiply"] = np.multiply
 namespace["negative"] = np.negative
 # no nextafter
-namespace["nextafter"] = np.vectorize(lambda x1, x2: x1)
+# namespace["nextafter"] = np.vectorize(lambda x1, x2: x1)
 namespace["not_equal"] = np.not_equal
 namespace["positive"] = np.positive
 namespace["pow"] = np.pow
