@@ -552,15 +552,37 @@ for name in ["argsort", "sort"]:
 for name in [
     "cumulative_prod",
     "cumulative_sum",
-    "max",
     "mean",
-    "min",
     "prod",
     "std",
     "sum",
     "var",
 ]:
     namespace[name] = getattr(np, name)
+
+
+def _max(a: Any, /, *, axis: int | None = None, keepdims: bool = False) -> Any:
+    if a.dtype not in [arb]:
+        return np.max(a, axis=axis, keepdims=keepdims)
+    upper = np.vectorize(lambda x: x.upper())(a)
+    upper_max = np.max(upper, axis=axis, keepdims=keepdims)
+    lower = np.vectorize(lambda x: x.lower())(a)
+    lower_max = np.max(lower, axis=axis, keepdims=keepdims)
+    return np.vectorize(lambda lower, upper: lower.union(upper))(lower_max, upper_max)
+
+
+def _min(a: Any, /, *, axis: int | None = None, keepdims: bool = False) -> Any:
+    if a.dtype not in [arb]:
+        return np.min(a, axis=axis, keepdims=keepdims)
+    lower = np.vectorize(lambda x: x.lower())(a)
+    lower_min = np.min(lower, axis=axis, keepdims=keepdims)
+    upper = np.vectorize(lambda x: x.upper())(a)
+    upper_min = np.min(upper, axis=axis, keepdims=keepdims)
+    return np.vectorize(lambda lower, upper: lower.union(upper))(lower_min, upper_min)
+
+
+namespace["max"] = _max
+namespace["min"] = _min
 
 # Utility Functions
 # Simply call numpy functions

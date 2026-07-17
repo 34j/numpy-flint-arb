@@ -30,6 +30,20 @@ def test_linspace():
     assert np.contains(x[2], (arb(1) + acb(1j)) / 2)
 
 
+def test_max():
+    # max([9, 11], [8, 14]) = [9, 14]
+    x = np.max(np.asarray([arb("10 +/- 1"), arb("11 +/- 3")]))
+    assert not np.contains(x, arb("8.9"))
+    assert np.contains(x, arb("9"))
+    assert np.contains(x, arb("14"))
+    assert not np.contains(x, arb("14.1"))
+
+
+def test_max_arf():
+    x = np.max(np.asarray([arf(10), arf(11)]))
+    assert x == arf(11)
+
+
 def test_creation():
     shape = (2, 2)
     x = np.zeros(shape)
