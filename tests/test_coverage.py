@@ -20,5 +20,4 @@ def _main_identifiers() -> set[str]:
 def test_missing_flint_attributes_in_main() -> None:
     all_attrs = _public_attributes()
     main_names = _main_identifiers()
-    missing = sorted(all_attrs - main_names)
-    print(missing)
+    _ = sorted(all_attrs - main_names)

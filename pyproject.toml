@@ -35,10 +35,10 @@ urls.repository = "https://github.com/34j/numpy-flint-arb"
 
 [dependency-groups]
 dev = [
-  "packaging-34j[test]",
   "coverage",
   "hypothesis>=6.151.9",
   "ndindex>=1.10.1",
+  "packaging-34j[test]",
   "pytest-env>=1.2",
   "pytest-json-report>=1.5",
 ]
@@ -48,6 +48,24 @@ docs = [
 
 [tool.ruff]
 extend = ".venv/ruff.toml"
+lint.extend-per-file-ignores."src/numpy_flint_arb/_main.py" = [
+  "A002",
+  "ARG001",
+  "ARG005",
+  "C901",
+  "D205",
+  "DOC501",
+  "FURB118",
+  "FURB189",
+  "N801",
+  "N807",
+  "NPY002",
+  "PLR6104",
+  "PLW0108",
+  "PLW0603",
+  "PLW3201",
+  "SLF001",
+]
 
 [tool.pyproject-fmt]
 max_supported_python = "3.14"
@@ -109,5 +127,5 @@ changelog.exclude_commit_patterns = [
   "test(?:\\([^)]*?\\))?: .+",
   "build\\((?!deps\\): .+)",
   "Merged? .*",
-  "Initial [Cc]ommit.*",           # codespell:ignore
+  "Initial [Cc]ommit.*",         # codespell:ignore
 ]
