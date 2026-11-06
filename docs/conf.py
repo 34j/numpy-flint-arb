@@ -1,87 +1,92 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+import tomllib
 from pathlib import Path
 from typing import Any
 
 from sphinx.application import Sphinx
 from sphinx.ext import apidoc
 
-# -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+project_root = next(
+    path for path in (Path.cwd(), *Path.cwd().parents) if (path / "pyproject.toml").is_file()
+)
+with (project_root / "pyproject.toml").open("rb") as pyproject_file:
+    pyproject = tomllib.load(pyproject_file)
 
-project = "numpy-flint-arb"
-copyright = "2025, 34j"
-author = "34j"
-release = "1.5.3"
+project_metadata = pyproject["project"]
+package_path = next(path for path in (project_root / "src").iterdir() if path.is_dir())
+readme = (project_root / "README.md").read_text(encoding="utf-8")
+project = next(
+    line.removeprefix("# ").strip() for line in readme.splitlines() if line.startswith("# ")
+)
+author = project_metadata["authors"][0]["name"]
+release = project_metadata["version"]
 
-# -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
-
-# Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
-# ones.
 extensions = [
     "myst_parser",
+    "sphinx_math_dollar",
+    "sphinx.ext.duration",
     "sphinx.ext.napoleon",
     "sphinx.ext.autodoc",
+    "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
 ]
-napoleon_google_docstring = False
-
-# The suffix of source filenames.
-source_suffix = [
-    ".rst",
-    ".md",
+myst_enable_extensions = [
+    "amsmath",
+    "dollarmath",
 ]
-
-# Add any paths that contain templates here, relative to this directory.
-templates_path = [
-    "_templates",
-]
-
-# List of patterns, relative to source directory, that match files and
-# directories to ignore when looking for source files.
-# This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = [
-    "_build",
-    "Thumbs.db",
-    ".DS_Store",
-]
-
-
-# -- Options for HTML output -------------------------------------------------
-
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
-#
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md": "markdown",
+}
 html_theme = "furo"
-
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["_static"]
+exclude_patterns = ["_build"]
 
 
-# -- Automatically run sphinx-apidoc -----------------------------------------
+def generate_documentation_sources(app: Sphinx, _: Any) -> None:
+    """Create temporary Sphinx source pages."""
+    sources = {
+        "index.md": """```{include} ../README.md
+
+```
+
+```{toctree}
+:caption: Project Info
+:maxdepth: 2
+:glob:
+
+*
+```
+""",
+        "changelog.md": "```{include} ../CHANGELOG.md\n```\n",
+    }
+    for name, content in sources.items():
+        (Path(app.srcdir) / name).write_text(content, encoding="utf-8")
+
+
+def cleanup_documentation_sources(app: Sphinx, _: Any) -> None:
+    """Remove temporary Sphinx source pages."""
+    for page in ("index.md", "changelog.md"):
+        path = Path(app.srcdir) / page
+        if path.exists():
+            path.unlink()
 
 
 def run_apidoc(_: Any) -> None:
-    """Run sphinx-apidoc."""
-    docs_path = Path(__file__).parent
-    module_path = docs_path.parent / "src" / "numpy_flint_arb"
-
-    apidoc.main([
-        "--force",
-        "--module-first",
-        "-o",
-        docs_path.as_posix(),
-        module_path.as_posix(),
-    ])
+    """Generate the API-reference source document."""
+    docs_path = project_root / "docs"
+    apidoc.main(
+        [
+            "--force",
+            "--module-first",
+            "--no-toc",
+            "-o",
+            docs_path.as_posix(),
+            package_path.as_posix(),
+        ],
+    )
 
 
 def setup(app: Sphinx) -> None:
-    """Setup sphinx."""
+    """Register Sphinx build hooks."""
+    app.connect("config-inited", generate_documentation_sources)
     app.connect("builder-inited", run_apidoc)
+    app.connect("build-finished", cleanup_documentation_sources)
