@@ -1,7 +1,7 @@
 from typing import Any
 
 import pytest
-from flint import acb, arb, arf
+from flint import acb, arb, arf, fmpq, fmpz
 
 from numpy_flint_arb import allow_input, np
 
@@ -36,6 +36,24 @@ def test_creation():
     x = np.zeros_like(x)
     x = np.ones(shape)
     x = np.ones_like(x)
+
+
+def test_dtype_functions():
+    assert np.can_cast(int, fmpz)
+    assert np.can_cast(float, arb)
+    assert np.can_cast(complex, acb)
+    assert not np.can_cast(str, arb)
+    assert np.can_cast(fmpz, fmpq)
+    assert np.is_dtype(fmpz, "integral")
+    assert np.is_dtype(arb, "real floating")
+    assert np.is_dtype(acb, "complex floating")
+    assert np.is_dtype(arb, "numeric")
+    assert np.finfo(arb).bits
+    assert np.iinfo(fmpz).dtype == fmpz
+    assert np.result_type(fmpz, arb) == arb
+    info = np.__array_namespace_info__()
+    assert info.default_dtypes()["real floating"] == arb
+    assert info.dtypes(kind=("integral", "real floating")) == {"fmpz": fmpz, "arb": arb, "arf": arf}
 
 
 def test_fft():
