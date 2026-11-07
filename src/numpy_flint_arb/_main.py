@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from contextlib import contextmanager
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, cast
 
 import numpy as np
 from array_api.latest import Array, ArrayNamespaceFull
@@ -59,26 +59,24 @@ def _fltype(x: Any) -> Any:
             return t
     if np.isdtype(el.dtype, "integral") or np.isdtype(el.dtype, "bool"):
         return fmpz
-    elif np.isdtype(el.dtype, "real floating"):
+    if np.isdtype(el.dtype, "real floating"):
         return arb
-    elif np.isdtype(el.dtype, "complex floating"):
+    if np.isdtype(el.dtype, "complex floating"):
         return acb
-    elif np.issubdtype(el.dtype, np.str_):
+    if np.issubdtype(el.dtype, np.str_) or np.issubdtype(el.dtype, np.bytes_):
         # if not np.any(np.vectorize(lambda z: "+/-" in str(z))(x)):
         #     return arf
         return arb
-    elif np.issubdtype(el.dtype, np.bytes_):
-        # if not np.any(np.vectorize(lambda z: "+/-" in str(z))(x)):
-        #     return arf
-        return arb
-    else:
-        raise ValueError(f"Unrecognized type {el.dtype}.")
+    raise ValueError(f"Unrecognized type {el.dtype}.")
 
 
 class AttrDict[TV](dict[str, TV]):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.__dict__ = self
+
+    def __getattr__(self, name: str) -> TV:
+        return self[name]
 
 
 class ArrayNamespaceFullFlintArb[TArray: Array, TDtype, TDevice](
@@ -96,22 +94,22 @@ class ArrayNamespaceFullFlintArb[TArray: Array, TDtype, TDevice](
     vectorize: Callable[..., Callable[..., TArray]]
 
     def contains(self, x: TArray, y: TArray) -> TArray:
-        """Returns nonzero iff y is contained in x."""
+        """Return nonzero iff y is contained in x."""
         ...
 
     def contains_integer(self, x: TArray) -> TArray:
         """
-        Returns nonzero iff the complex interval
+        Return nonzero iff the complex interval
         represented by x contains an integer.
         """
         ...
 
     def overlaps(self, x: TArray, y: TArray) -> TArray:
-        """Returns nonzero iff x and y have some point in common."""
+        """Return nonzero iff x and y have some point in common."""
         ...
 
 
-namespace: ArrayNamespaceFullFlintArb["flarray", Any, Any] = AttrDict()  # type: ignore
+namespace: AttrDict[Any] = AttrDict()
 
 
 # https://numpy.org/doc/stable/user/basics.subclassing.html
@@ -141,7 +139,7 @@ class flarray(np.ndarray):
     def __array_namespace__(self, /, *, api_version: Any = None) -> Any:
         return namespace
 
-    def __contains__(self, value: object) -> "flarray":
+    def __contains__(self, value: object) -> bool:
         raise NotImplementedError(
             "Since 'in' operator tries to convert the return value to bool, "
             "use np.contains(x, y) instead of y in x."
@@ -158,9 +156,9 @@ def asarray(
     el = a.flat[0] if a.size > 0 else None
     if dtype is not None and isinstance(el, dtype) and (copy is False or copy is None):
         return a
-    elif copy is False:
+    if copy is False:
         raise ValueError("Cannot convert to the requested dtype without copying.")
-    elif dtype is None:
+    if dtype is None:
         try:
             dtype = _fltype(a)
         except ValueError as e:
@@ -177,7 +175,7 @@ def asarray(
         or np.isdtype(dtype_a, np.bytes_)
     ):
         if isinstance(el, arf) and dtype != arf:
-            raise NonIntervalInputNotAllowedError()
+            raise NonIntervalInputNotAllowedError
         if np.issubdtype(dtype_a, np.bytes_):
 
             def f(z: Any) -> Any:
@@ -200,14 +198,14 @@ def asarray(
         errors: list[NotAllowedError] = []
         if not _ALLOW_FLOAT_INPUT:
             errors.append(FloatInputNotAllowedError())
-        if not _ALLOW_NONINTERVAL_INPUT and dtype in [arb, acb]:
+        if not _ALLOW_NONINTERVAL_INPUT and dtype in {arb, acb}:
             errors.append(NonIntervalInputNotAllowedError())
         if errors:
             raise ExceptionGroup("Input is not allowed.", errors)
         a = np.vectorize(
             lambda z: dtype((float if np.isdtype(dtype_a, "real floating") else complex)((z)))
         )(a)
-    a = a.view(flarray)
+    a = cast("flarray", a.view(flarray))
     a._fl_dtype = dtype
     return a
 
@@ -251,8 +249,7 @@ for name in [
         dtype = kwargs.pop("dtype", None)
         kwargs["dtype"] = np.int64
         a = getattr(np, _name)(*args, **kwargs)
-        a = asarray(a, dtype=dtype)
-        return a
+        return asarray(a, dtype=dtype)
 
     namespace[name] = _
 
@@ -298,22 +295,21 @@ def can_cast(from_: Any, to: Any, /) -> bool:
     # numpy -> flint possible in some cases
     if from_ not in dtypes and to in dtypes:
         if np.issubdtype(from_, np.integer):
-            return to in [fmpz, fmpq, arb, acb]
-        elif np.issubdtype(from_, np.floating):
-            return to in [fmpq, arb, acb]
-        elif np.issubdtype(from_, np.complexfloating):
-            return to in [acb]
-        else:
-            return False
+            return to in {fmpz, fmpq, arb, acb}
+        if np.issubdtype(from_, np.floating):
+            return to in {fmpq, arb, acb}
+        if np.issubdtype(from_, np.complexfloating):
+            return to == acb
+        return False
     # flint -> flint possible in some cases
-    if (from_, to) in [
+    if (from_, to) in {
         (fmpz, fmpq),
         (fmpz, arb),
         (fmpz, acb),
         (fmpq, arb),
         (fmpq, acb),
         (arb, acb),
-    ]:
+    }:
         return True
     return from_ == to
 
@@ -323,28 +319,24 @@ namespace["can_cast"] = can_cast
 
 def is_dtype(dtype: Any, kind: Any) -> bool:
     if dtype in dtypes:
-        if kind in ["bool", "unsigned integer"]:
+        if kind in {"bool", "unsigned integer"}:
             return False
-        elif kind in ["signed integer", "integral"]:
+        if kind in {"signed integer", "integral"}:
             return dtype == fmpz
-        elif kind == "real floating":
-            return dtype in [arf, arb]
-        elif kind == "complex floating":
+        if kind == "real floating":
+            return dtype in {arf, arb}
+        if kind == "complex floating":
             return dtype == acb
-        elif kind == "numeric":
+        if kind == "numeric":
             return dtype in dtypes
-        elif kind == dtype:
-            return True
-        else:
-            return False
-    else:
-        return np.isdtype(dtype, kind)
+        return kind == dtype
+    return np.isdtype(dtype, kind)
 
 
 namespace["is_dtype"] = is_dtype
 
 
-def finfo(type: Any, /) -> Any:
+def finfo(type_: Any, /) -> Any:
     return AttrDict({
         "bits": ctx.prec,
         "eps": None,
@@ -358,7 +350,7 @@ def finfo(type: Any, /) -> Any:
 namespace["finfo"] = finfo
 
 
-def iinfo(type: Any, /) -> Any:
+def iinfo(type_: Any, /) -> Any:
     return AttrDict({
         "bits": None,
         "max": None,
@@ -383,14 +375,13 @@ def result_type(*arrays_and_dtypes: Any) -> Any:
             types.append(_fltype(x))
     if acb in types:
         return acb
-    elif arb in types:
+    if arb in types:
         return arb
-    elif arf in types:
+    if arf in types:
         return arf
-    elif fmpq in types:
+    if fmpq in types:
         return fmpq
-    else:
-        return fmpz
+    return fmpz
 
 
 namespace["result_type"] = result_type
@@ -481,25 +472,24 @@ def __array_namespace_info__() -> Any:
     new_info["default_dtypes"] = default_dtypes
 
     def dtypes(*, device: Any = None, kind: Any = None) -> dict[str, Any]:
-        if kind in ["bool"]:
+        if kind == "bool":
             return {"bool": np.bool}
-        elif kind in ["unsigned integer"]:
+        if kind == "unsigned integer":
             return {}
-        elif kind in ["signed integer", "integral"]:
+        if kind in {"signed integer", "integral"}:
             return {"fmpz": fmpz}
-        elif kind == "real floating":
+        if kind == "real floating":
             return {"arb": arb, "arf": arf}
-        elif kind == "complex floating":
+        if kind == "complex floating":
             return {"acb": acb}
-        elif kind == "numeric":
+        if kind == "numeric":
             return {"fmpz": fmpz, "fmpq": fmpq, "arb": arb, "acb": acb, "arf": arf}
-        elif isinstance(kind, tuple):
+        if isinstance(kind, tuple):
             res = {}
             for k in kind:
                 res.update(dtypes(device=device, kind=k))
             return res
-        else:
-            return {}
+        return {}
 
     new_info["dtypes"] = dtypes
     return new_info
@@ -716,7 +706,7 @@ def solve(a: Any, b: Any, /) -> Any:
         b = b[..., :, None]
     a_mat = tomat(a)
     b_mat = tomat(b)
-    x_mat = np.vectorize(lambda A, B: A.solve(B))(a_mat, b_mat)
+    x_mat = np.vectorize(lambda a, b: a.solve(b))(a_mat, b_mat)
     x = frommat(x_mat)
     if expand_b:
         x = x[..., :, 0]
@@ -737,13 +727,13 @@ namespace["fft"] = fft
 
 
 def _fft(
-    x: Array,
+    x: Any,
     /,
     *,
     n: int | None = None,
     axis: int = -1,
     norm: Literal["backward", "ortho", "forward"] = "backward",
-) -> Array:
+) -> Any:
     if n is not None and n > x.shape[axis]:
         x = np.pad(x, [(0, 0)] * axis + [(0, n - x.shape[axis])] + [(0, 0)] * (x.ndim - axis - 1))
     x = np.apply_along_axis(lambda x: acb.dft(x.tolist()), axis, x)
@@ -759,13 +749,13 @@ def _fft(
 
 
 def _ifft(
-    x: Array,
+    x: Any,
     /,
     *,
     n: int | None = None,
     axis: int = -1,
     norm: Literal["backward", "ortho", "forward"] = "backward",
-) -> Array:
+) -> Any:
     if n is not None and n > x.shape[axis]:
         x = np.pad(x, [(0, 0)] * axis + [(0, n - x.shape[axis])] + [(0, 0)] * (x.ndim - axis - 1))
     x = np.apply_along_axis(lambda x: acb.dft(x.tolist(), inverse=True), axis, x)
