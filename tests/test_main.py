@@ -2,6 +2,7 @@ from typing import Any
 
 import pytest
 from flint import acb, arb, arf, fmpq, fmpz
+from numpy import datetime64, dtype
 
 from numpy_flint_arb import allow_input, np
 
@@ -48,12 +49,29 @@ def test_dtype_functions():
     assert np.is_dtype(arb, "real floating")
     assert np.is_dtype(acb, "complex floating")
     assert np.is_dtype(arb, "numeric")
+    assert np.is_dtype(arb, arb)
+    assert np.is_dtype(dtype("float64"), "real floating")
     assert np.finfo(arb).bits
     assert np.iinfo(fmpz).dtype == fmpz
+    assert np.result_type() == fmpz
+    assert np.result_type(fmpq(1)) == fmpq
+    assert np.result_type(arf(1)) == arf
     assert np.result_type(fmpz, arb) == arb
     info = np.__array_namespace_info__()
     assert info.default_dtypes()["real floating"] == arb
     assert info.dtypes(kind=("integral", "real floating")) == {"fmpz": fmpz, "arb": arb, "arf": arf}
+    assert info.dtypes(kind="other") == {}
+
+
+def test_inferred_dtypes() -> None:
+    with allow_input(float=True, interval=True):
+        assert np.asarray(1.5).dtype == arb
+        assert np.asarray(1 + 2j).dtype == acb
+        assert np.asarray("1.0").dtype == arb
+    with pytest.raises(TypeError, match="Could not infer dtype"):
+        np.asarray(datetime64("2025-01-01"))
+    with pytest.raises(Exception, match="Non-interval input"):
+        np.asarray(arf(1), dtype=arb)
 
 
 def test_fft():

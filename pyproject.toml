@@ -42,6 +42,7 @@ dev = [
   "packaging-34j[test]",
   "pytest-env>=1.2",
   "pytest-json-report>=1.5",
+  "ty",
 ]
 docs = [
   "packaging-34j[docs]",
@@ -102,31 +103,4 @@ report.exclude_lines = [
   "if TYPE_CHECKING",
   "pragma: no cover",
   "raise NotImplementedError",
-]
-
-[tool.semantic_release]
-version_variables = [
-  "src/numpy_flint_arb/__init__.py:__version__",
-  "docs/conf.py:release",
-]
-version_toml = [ "pyproject.toml:project.version" ]
-build_command = """
-pip install uv
-uv lock
-git add uv.lock
-uv build
-"""
-branches.main.match = "main"
-branches.noop.match = "(?!main$)"
-branches.noop.prerelease = true
-changelog.environment.keep_trailing_newline = true
-changelog.exclude_commit_patterns = [
-  "chore(?:\\([^)]*?\\))?: .+",
-  "ci(?:\\([^)]*?\\))?: .+",
-  "refactor(?:\\([^)]*?\\))?: .+",
-  "style(?:\\([^)]*?\\))?: .+",
-  "test(?:\\([^)]*?\\))?: .+",
-  "build\\((?!deps\\): .+)",
-  "Merged? .*",
-  "Initial [Cc]ommit.*",           # codespell:ignore
 ]
