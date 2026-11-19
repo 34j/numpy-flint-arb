@@ -26,7 +26,7 @@ classifiers = [
 dependencies = [
   "cm-time>=0.1.2",
   "numpy>=2.2.6",
-  "python-flint>=0.6",
+  "python-flint>=0.9.0",
   "types-array-api>=1.2",
 ]
 urls."Bug Tracker" = "https://github.com/34j/numpy-flint-arb/issues"
