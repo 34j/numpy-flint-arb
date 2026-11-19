@@ -24,7 +24,7 @@ classifiers = [
   "Topic :: Software Development :: Libraries",
 ]
 dependencies = [
-  "cm-time>=0.1.2",
+  "cm-time>=1.0.2",
   "numpy>=2.2.6",
   "python-flint>=0.6",
   "types-array-api>=1.2",
